@@ -40,6 +40,7 @@
   .legend{display:flex;flex-direction:column;gap:5px;padding:9px 14px;border-bottom:1px solid var(--hair2)}
   .bar{height:9px;border-radius:5px;background:linear-gradient(90deg,var(--lo),var(--mid),var(--hi))}
   .leglabs{display:flex;justify-content:space-between;font-size:11px;color:var(--muted)}
+  .help{font-size:11.5px;line-height:1.45;color:var(--muted);padding:8px 14px 10px;border-bottom:1px solid var(--hair2)}
   .tablewrap{overflow:auto;min-height:0}
   table{width:100%;border-collapse:collapse;font-size:13px}
   thead th{position:sticky;top:0;background:var(--panel);z-index:1;text-align:left;padding:9px 12px;border-bottom:1px solid var(--hair);color:var(--muted);font-weight:600;cursor:pointer;white-space:nowrap;user-select:none}
@@ -101,6 +102,7 @@
     <aside>
       <div class="aside-head"><b id="metricName"></b><span class="n"><span id="shown">0</span> <span id="shownUnit"></span></span></div>
       <div class="legend"><div class="bar" id="bar"></div><div class="leglabs"><span id="legLo"></span><span id="legHi"></span></div></div>
+      <div class="help" id="metricHelp"></div>
       <div class="tablewrap">
         <table><thead><tr>
           <th data-sort="namn"><span class="hl" id="thSchool"></span><span class="ar">▲▼</span></th>
@@ -161,6 +163,28 @@ const I18N={
 };
 
 const METRICS={admission:{field:'a',dom:[160,320],unit:'',dec:0},exam3:{field:'e',dom:[50,100],unit:'%',dec:0},gpa:{field:'g',dom:[10,18],unit:'',dec:1}};
+const HELP={
+  zh:{
+    admission:'录取分 antagningspoäng：上一轮录取中、被该项目录取学生的初中绩点（默认显示平均分；弹窗里还有最低分）。它反映这个项目<b>有多难考进</b>，并不直接等于教学质量。',
+    exam3:'三年毕业率%：入学后三年内拿到高中文凭(examen)的学生比例。',
+    gpa:'毕业绩点 betygspoäng：毕业生各科成绩的平均分（0–20，A=20、E=10）。部分学校因毕业人数太少被屏蔽，显示为"—"。'
+  },
+  sv:{
+    admission:'Antagningspoäng: meritvärdet bland antagna till programmet i senaste antagningen (snitt visas; lägsta finns i popupen). Visar <b>hur svårt det är att komma in</b> – inte skolans kvalitet.',
+    exam3:'Examen inom 3 år %: andel som tagit gymnasieexamen inom tre år efter start.',
+    gpa:'Betygspoäng: elevernas genomsnittliga betygspoäng (0–20, A=20, E=10). Kan saknas (\u2014) för små grupper.'
+  },
+  en:{
+    admission:'Admission points: the year-9 merit value of pupils admitted to the program in the latest round (average shown; minimum is in the popup). Shows <b>how hard it is to get in</b> — not teaching quality.',
+    exam3:'Diploma within 3 years %: share who obtained an upper-secondary diploma within three years of starting.',
+    gpa:'Grade points: graduates\u2019 average grade points (0–20, A=20, E=10). May be missing (\u2014) for small groups.'
+  }
+};
+const GPROG={
+  zh:{avg:'当前为"所有项目"的<b>校加权平均</b>（按各项目人数加权）。在上方选具体项目，对比更准确。',one:'当前只看所选项目；同校不同项目差别可能很大。'},
+  sv:{avg:'Visar nu ett <b>viktat skolsnitt</b> över alla program. Välj ett program ovan för rättvisare jämförelse.',one:'Visar nu valt program; program inom samma skola kan skilja sig mycket.'},
+  en:{avg:'Showing a <b>weighted school average</b> across all programs. Pick a program above for a fairer comparison.',one:'Showing the selected program; programs within a school can differ a lot.'}
+};
 
 let lang='zh';
 try{const s=localStorage.getItem('skolkarta_lang');if(s&&I18N[s])lang=s;else{const n=(navigator.language||'').slice(0,2);if(I18N[n])lang=n;}}catch(e){}
@@ -249,7 +273,7 @@ function sortRows(rows){
   if(!isStr){const has=[],no=[];arr.forEach(s=>{(valOf(s)==null?no:has).push(s);});return [...has,...no];}
   return arr;
 }
-function setLegend(){const M=METRICS[state.metric];$('#legLo').textContent=M.dom[0]+M.unit;$('#legHi').textContent=M.dom[1]+M.unit;}
+function setLegend(){const M=METRICS[state.metric];$('#legLo').textContent=M.dom[0]+M.unit;$('#legHi').textContent=M.dom[1]+M.unit;const note=state.program?GPROG[lang].one:GPROG[lang].avg;$('#metricHelp').innerHTML=HELP[lang][state.metric]+'<br><span style="opacity:.85">'+note+'</span>';}
 function render(){
   const m=state.metric,t=I18N[lang];
   $('#metricName').textContent=t.metricNames[m]+(state.program?` · ${state.program}`:'');

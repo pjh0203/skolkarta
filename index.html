@@ -202,6 +202,26 @@ const METRICS = {
   np:        {field:'np',         dom:[9,18],  unit:'', dec:1},
   salsa:     {field:'salsaDev',   dom:[-30,30],unit:'', dec:0, diverging:true},
 };
+const HELP={
+  zh:{
+    meritvarde:'平均绩点 (meritvärde)：9年级最好的16门科目成绩之和（修现代语言则17门），满分340。E=10、C=15、A=20。它决定能报考哪些高中。高分既可能反映教学，也可能反映生源。',
+    behorighet:'升学资格% (behörig)：达到报考高中职业项目资格的学生比例——需瑞典语/英语/数学及格，再加另外5门科目。',
+    np:'全国统考均分：9年级瑞典语、英语、数学三科全国统考的平均分（每科0–20）。全国统一命题、集中评分，受本地打分宽严影响较小。',
+    salsa:'SALSA 增值偏差：学校实际平均绩点 − 按学生家庭背景（家长教育、性别比、新移民比例）预测的绩点。正（绿）＝高于预期、负（红）＝低于预期。能较大程度剔除生源差异，更接近"学校自身的贡献"。SALSA 学年通常比成绩晚一年。'
+  },
+  sv:{
+    meritvarde:'Meritvärde: summan av de 16 bästa ämnesbetygen i åk 9 (17 med moderna språk), max 340. E=10, C=15, A=20. Avgör vilka gymnasieprogram eleven kan söka. Ett högt värde kan spegla både undervisning och elevunderlag.',
+    behorighet:'Behörighet %: andel elever som blivit behöriga till ett yrkesprogram – godkänt i svenska/engelska/matematik plus ytterligare fem ämnen.',
+    np:'Nationella prov: snitt av proven i svenska, engelska och matematik i åk 9 (0–20 per ämne). Centralt utformade, mindre påverkade av lokal betygssättning.',
+    salsa:'SALSA-avvikelse: skolans faktiska meritvärde minus det modellen förväntar utifrån elevernas bakgrund (föräldrars utbildning, könsfördelning, andel nyinvandrade). Plus (grön) = över förväntan, minus (röd) = under. Renodlar skolans eget bidrag bättre än råa betyg. SALSA-läsåret ligger ofta ett år efter betygen.'
+  },
+  en:{
+    meritvarde:'Merit value (meritvärde): sum of the 16 best year-9 subject grades (17 with a modern language), max 340. E=10, C=15, A=20. It decides which upper-secondary programs a pupil can apply to. A high value can reflect teaching and/or intake.',
+    behorighet:'Eligibility %: share of pupils qualified for a vocational upper-secondary program — a pass in Swedish/English/Maths plus five more subjects.',
+    np:'National tests: average of the year-9 tests in Swedish, English and Maths (0–20 each). Centrally set and marked, so less affected by local grading.',
+    salsa:'SALSA deviation: the school\u2019s actual merit value minus what a model predicts from pupils\u2019 background (parental education, sex ratio, share newly immigrated). Positive (green) = above expectation, negative (red) = below. Isolates the school\u2019s own contribution better than raw grades. The SALSA year usually lags the grades by one year.'
+  }
+};
 
 let lang = 'zh';
 try{ const s=localStorage.getItem('skolkarta_lang'); if(s&&I18N[s]) lang=s;
@@ -313,7 +333,7 @@ function setLegend(){
     $('#legLo').textContent=M.dom[0]+M.unit; $('#legHi').textContent=M.dom[1]+M.unit; $('#legMid').style.display='none';
   }
   const help=$('#metricHelp');
-  if(m==='salsa'){ help.textContent=t.salsaHelp; help.style.display='block'; } else help.style.display='none';
+  help.innerHTML=HELP[lang][m]; help.style.display='block';
 }
 function render(){
   const m=state.metric, M=METRICS[m], f=M.field, t=I18N[lang];
