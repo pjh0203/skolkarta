@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Grundskolan åk 9</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<style>
+  :root{
+    --paper:#f6f5f1; --panel:#ffffff; --ink:#1b2230; --muted:#5d6675;
+    --hair:#e5e3db; --hair2:#efeee8; --brand:#2f6f5e;
+    --lo:#b14b3f; --mid:#e7c15e; --hi:#2f7d6b; --none:#c7c9c4;
+    --neutral:#ece9df;
+    --shadow:0 1px 2px rgba(20,25,38,.06),0 8px 24px rgba(20,25,38,.06);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Hanken Grotesk","Helvetica Neue",Arial,"PingFang SC","Microsoft YaHei",sans-serif;
+    color:var(--ink);background:var(--paper);-webkit-font-smoothing:antialiased;
+  }
+  .tnum{font-variant-numeric:tabular-nums}
+  .app{display:flex;flex-direction:column;height:100%}
+  header{padding:14px 16px 12px;border-bottom:1px solid var(--hair);background:linear-gradient(180deg,#fbfaf7,#f6f5f1)}
+  .ttl{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+  h1{margin:0;font-size:19px;letter-spacing:.2px;font-weight:680}
+  .sub{color:var(--muted);font-size:12.5px}
+  .meta{margin-top:2px;color:var(--muted);font-size:12px}
+  .sample-flag{display:none;margin-top:6px;font-size:12px;color:#8a5a1b;background:#fdf3df;border:1px solid #f0dcae;border-radius:8px;padding:5px 9px}
+  .sample-flag.on{display:inline-block}
+  .sample-flag code{background:#f3e6c4;padding:1px 4px;border-radius:4px}
+
+  .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}
+  .seg{display:inline-flex;background:#ecebe4;border-radius:10px;padding:3px;gap:2px}
+  .seg button{appearance:none;border:0;background:transparent;color:var(--muted);font:inherit;font-size:13px;font-weight:560;padding:7px 12px;border-radius:8px;cursor:pointer;white-space:nowrap;transition:background .15s,color .15s,box-shadow .15s}
+  .seg button[aria-pressed="true"]{background:var(--panel);color:var(--ink);box-shadow:var(--shadow)}
+  .seg button:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+  .seg.lang button{padding:7px 10px}
+  .spacer{flex:1 1 auto}
+  select,.search input{font:inherit;font-size:13px;color:var(--ink);background:var(--panel);border:1px solid var(--hair);border-radius:9px;padding:8px 10px;min-height:38px}
+  .search{position:relative}
+  .search input{padding-left:30px;width:190px;max-width:46vw}
+  .search svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);opacity:.5}
+
+  .main{flex:1 1 auto;display:flex;min-height:0}
+  #map{flex:1 1 auto;min-width:0;background:#e9e7df}
+  .leaflet-container{font:inherit}
+  aside{width:392px;max-width:42vw;border-left:1px solid var(--hair);background:var(--panel);display:flex;flex-direction:column;min-height:0}
+  .aside-head{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--hair2)}
+  .aside-head b{font-size:13px;font-weight:640}
+  .aside-head .n{color:var(--muted);font-size:12px}
+  .legend{display:flex;flex-direction:column;gap:5px;padding:9px 14px;border-bottom:1px solid var(--hair2)}
+  .bar{height:9px;border-radius:5px;background:linear-gradient(90deg,var(--lo),var(--mid),var(--hi))}
+  .leglabs{display:flex;justify-content:space-between;font-size:11px;color:var(--muted)}
+  .help{font-size:11.5px;color:var(--muted);padding:0 14px 9px;border-bottom:1px solid var(--hair2);display:none}
+
+  .tablewrap{overflow:auto;min-height:0}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  thead th{position:sticky;top:0;background:var(--panel);z-index:1;text-align:left;padding:9px 12px;border-bottom:1px solid var(--hair);color:var(--muted);font-weight:600;cursor:pointer;white-space:nowrap;user-select:none}
+  thead th.numcol{text-align:right}
+  thead th .ar{opacity:.4;font-size:10px;margin-left:3px}
+  thead th[aria-sort] .ar{opacity:1;color:var(--ink)}
+  tbody td{padding:9px 12px;border-bottom:1px solid var(--hair2);vertical-align:top}
+  tbody td.numcol{text-align:right}
+  tbody tr{cursor:pointer}
+  tbody tr:hover{background:#f4f7f5}
+  tbody tr.active{background:#e8f1ed;box-shadow:inset 3px 0 0 var(--brand)}
+  .skola{font-weight:560}
+  .kom{color:var(--muted);font-size:12px}
+  .val{display:inline-flex;align-items:center;gap:7px;justify-content:flex-end}
+  .dot{width:10px;height:10px;border-radius:50%;flex:none;box-shadow:0 0 0 1px rgba(0,0,0,.08) inset}
+
+  .pop b{display:block;font-size:14px;margin-bottom:2px}
+  .pop .pk{color:var(--muted);font-size:12px;margin-bottom:8px}
+  .pop .grid{display:grid;grid-template-columns:auto auto;gap:3px 14px;font-size:12.5px}
+  .pop .grid span:nth-child(odd){color:var(--muted)}
+  .pop .grid span:nth-child(even){text-align:right;font-variant-numeric:tabular-nums}
+  .empty{padding:26px 16px;color:var(--muted);font-size:13px;text-align:center}
+
+  @media (max-width:820px){
+    .main{flex-direction:column}
+    #map{height:52vh;flex:none}
+    aside{width:auto;max-width:none;border-left:0;border-top:1px solid var(--hair);flex:1 1 auto}
+    .search input{width:150px}
+  }
+  @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="ttl"><h1 id="h1"></h1><span class="sub" id="subtitle"></span></div>
+    <div class="meta" id="meta"></div>
+    <div class="sample-flag" id="sampleFlag"></div>
+    <div class="controls">
+      <div class="seg" id="metricSeg" role="group" aria-label="metric">
+        <button data-metric="meritvarde" aria-pressed="true"></button>
+        <button data-metric="behorighet" aria-pressed="false"></button>
+        <button data-metric="np" aria-pressed="false"></button>
+        <button data-metric="salsa" aria-pressed="false"></button>
+      </div>
+      <div class="seg" id="huvudSeg" role="group" aria-label="type">
+        <button data-huvud="" aria-pressed="true"></button>
+        <button data-huvud="Kommunal" aria-pressed="false"></button>
+        <button data-huvud="Fristående" aria-pressed="false"></button>
+      </div>
+      <div class="spacer"></div>
+      <div class="seg lang" id="langSeg" role="group" aria-label="language">
+        <button data-lang="zh">中文</button>
+        <button data-lang="sv">SV</button>
+        <button data-lang="en">EN</button>
+      </div>
+      <select id="kommun"><option value=""></option></select>
+      <label class="search">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input id="q" type="search" autocomplete="off" />
+      </label>
+    </div>
+  </header>
+
+  <div class="main">
+    <div id="map"></div>
+    <aside>
+      <div class="aside-head"><b id="metricName"></b><span class="n"><span id="shown">0</span> <span id="shownUnit"></span></span></div>
+      <div class="legend">
+        <div class="bar" id="bar"></div>
+        <div class="leglabs"><span id="legLo"></span><span id="legMid"></span><span id="legHi"></span></div>
+      </div>
+      <div class="help" id="metricHelp"></div>
+      <div class="tablewrap">
+        <table>
+          <thead><tr>
+            <th data-sort="namn"><span class="hl" id="thSchool"></span><span class="ar">▲▼</span></th>
+            <th data-sort="kommun"><span class="hl" id="thKommun"></span><span class="ar">▲▼</span></th>
+            <th class="numcol" data-sort="metric" aria-sort="descending"><span class="hl" id="thValue"></span><span class="ar">▼</span></th>
+          </tr></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+        <div class="empty" id="empty" hidden></div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const SAMPLE = {"generatedAt":"2026-06-19T00:00:00.000Z","source":"EXEMPELDATA (platshållare) – byt mot riktig data via fetch-data.mjs","sample":true,"count":30,"latestPeriod":"2024/25","schools":[{"kod":"00000001","namn":"Hulebäcksgymnasiets grundskola","kommun":"Härryda","ort":"Mölnlycke","huvudman":"Kommunal","lat":57.6592,"lng":12.119,"meritvarde":241,"behorighet":92,"np":14.1,"npSve":14,"npEng":16.2,"npMa":12.1,"andelGodkand":85,"lararbehorighet":78,"elever":210,"period":"2024/25","salsaActual":241,"salsaCalc":235,"salsaDev":6,"salsaReqDev":2,"salsaParents":2.3},{"kod":"00000002","namn":"Önnerödsskolan","kommun":"Härryda","ort":"Mölnlycke","huvudman":"Kommunal","lat":57.665,"lng":12.13,"meritvarde":233.5,"behorighet":89,"np":13.4,"npSve":13.2,"npEng":15.6,"npMa":11.4,"andelGodkand":82,"lararbehorighet":81,"elever":160,"period":"2024/25","salsaActual":234,"salsaCalc":237,"salsaDev":-3,"salsaReqDev":-1,"salsaParents":2.3},{"kod":"00000003","namn":"Landvetterskolan","kommun":"Härryda","ort":"Landvetter","huvudman":"Kommunal","lat":57.696,"lng":12.208,"meritvarde":228,"behorighet":87,"np":13,"npSve":12.8,"npEng":15,"npMa":11.2,"andelGodkand":80,"lararbehorighet":76,"elever":190,"period":"2024/25","salsaActual":228,"salsaCalc":227,"salsaDev":1,"salsaReqDev":0,"salsaParents":2.2},{"kod":"00000004","namn":"Fässbergsskolan","kommun":"Mölndal","ort":"Mölndal","huvudman":"Kommunal","lat":57.654,"lng":12.013,"meritvarde":221,"behorighet":84,"np":12.6,"npSve":12.4,"npEng":14.6,"npMa":10.8,"andelGodkand":77,"lararbehorighet":74,"elever":230,"period":"2024/25","salsaActual":221,"salsaCalc":223,"salsaDev":-2,"salsaReqDev":-1,"salsaParents":2.2},{"kod":"00000005","namn":"Krokslättsskolan","kommun":"Mölndal","ort":"Mölndal","huvudman":"Kommunal","lat":57.672,"lng":12.015,"meritvarde":215.5,"behorighet":81,"np":12.1,"npSve":12,"npEng":14,"npMa":10.3,"andelGodkand":74,"lararbehorighet":70,"elever":180,"period":"2024/25","salsaActual":216,"salsaCalc":222,"salsaDev":-6,"salsaReqDev":-2,"salsaParents":2.1},{"kod":"00000006","namn":"Vättleskolan","kommun":"Partille","ort":"Partille","huvudman":"Kommunal","lat":57.74,"lng":12.106,"meritvarde":219,"behorighet":83,"np":12.4,"npSve":12.2,"npEng":14.3,"npMa":10.7,"andelGodkand":76,"lararbehorighet":72,"elever":210,"period":"2024/25","salsaActual":219,"salsaCalc":217,"salsaDev":2,"salsaReqDev":1,"salsaParents":2.2},{"kod":"00000007","namn":"Lerums gymnasieskola åk 9","kommun":"Lerum","ort":"Lerum","huvudman":"Kommunal","lat":57.77,"lng":12.27,"meritvarde":226,"behorighet":86,"np":12.9,"npSve":12.7,"npEng":14.9,"npMa":11,"andelGodkand":79,"lararbehorighet":75,"elever":200,"period":"2024/25","salsaActual":226,"salsaCalc":222,"salsaDev":4,"salsaReqDev":1,"salsaParents":2.2},{"kod":"00000008","namn":"Hålta skola","kommun":"Kungälv","ort":"Kungälv","huvudman":"Kommunal","lat":57.87,"lng":11.98,"meritvarde":217,"behorighet":82,"np":12.2,"npSve":12.1,"npEng":14.1,"npMa":10.4,"andelGodkand":75,"lararbehorighet":71,"elever":140,"period":"2024/25","salsaActual":217,"salsaCalc":218,"salsaDev":-1,"salsaReqDev":0,"salsaParents":2.1},{"kod":"00000009","namn":"Aranässkolan","kommun":"Kungsbacka","ort":"Kungsbacka","huvudman":"Kommunal","lat":57.487,"lng":12.076,"meritvarde":234,"behorighet":90,"np":13.6,"npSve":13.4,"npEng":15.8,"npMa":11.6,"andelGodkand":83,"lararbehorighet":79,"elever":260,"period":"2024/25","salsaActual":234,"salsaCalc":226,"salsaDev":8,"salsaReqDev":3,"salsaParents":2.3},{"kod":"00000010","namn":"Montessoriskolan Centrum","kommun":"Göteborg","ort":"Göteborg","huvudman":"Fristående","lat":57.701,"lng":11.968,"meritvarde":252,"behorighet":95,"np":15.2,"npSve":15.1,"npEng":17,"npMa":13.5,"andelGodkand":90,"lararbehorighet":68,"elever":120,"period":"2024/25","salsaActual":252,"salsaCalc":264,"salsaDev":-12,"salsaReqDev":-4,"salsaParents":2.4},{"kod":"00000011","namn":"Hvitfeldtska grundskolan","kommun":"Göteborg","ort":"Göteborg","huvudman":"Kommunal","lat":57.702,"lng":11.956,"meritvarde":238,"behorighet":91,"np":14,"npSve":13.9,"npEng":16.1,"npMa":12,"andelGodkand":84,"lararbehorighet":80,"elever":300,"period":"2024/25","salsaActual":238,"salsaCalc":242,"salsaDev":-4,"salsaReqDev":-1,"salsaParents":2.3},{"kod":"00000012","namn":"Bergsjöskolan","kommun":"Göteborg","ort":"Göteborg","huvudman":"Kommunal","lat":57.756,"lng":12.036,"meritvarde":182,"behorighet":62,"np":9.6,"npSve":9.4,"npEng":11,"npMa":8.4,"andelGodkand":55,"lararbehorighet":64,"elever":170,"period":"2024/25","salsaActual":182,"salsaCalc":200,"salsaDev":-18,"salsaReqDev":-6,"salsaParents":1.9},{"kod":"00000013","namn":"Frölundaskolan","kommun":"Göteborg","ort":"Västra Frölunda","huvudman":"Kommunal","lat":57.652,"lng":11.912,"meritvarde":198,"behorighet":72,"np":11,"npSve":10.8,"npEng":12.7,"npMa":9.4,"andelGodkand":66,"lararbehorighet":69,"elever":220,"period":"2024/25","salsaActual":198,"salsaCalc":206,"salsaDev":-8,"salsaReqDev":-3,"salsaParents":2},{"kod":"00000014","namn":"Internationella Engelska Skolan Krokslätt","kommun":"Göteborg","ort":"Göteborg","huvudman":"Fristående","lat":57.684,"lng":12.009,"meritvarde":245,"behorighet":93,"np":14.6,"npSve":14.4,"npEng":17.2,"npMa":12.2,"andelGodkand":88,"lararbehorighet":66,"elever":340,"period":"2024/25","salsaActual":245,"salsaCalc":255,"salsaDev":-10,"salsaReqDev":-3,"salsaParents":2.4},{"kod":"00000015","namn":"Adolf Fredriks musikklasser","kommun":"Stockholm","ort":"Stockholm","huvudman":"Kommunal","lat":59.3373,"lng":18.051,"meritvarde":288.5,"behorighet":96.3,"np":16.7,"npSve":15.9,"npEng":18.5,"npMa":15.7,"andelGodkand":92.6,"lararbehorighet":89.6,"elever":480,"period":"2024/25","salsaActual":289,"salsaCalc":274,"salsaDev":15,"salsaReqDev":5,"salsaParents":2.7},{"kod":"00000016","namn":"Danderyds gymnasiums grundskola","kommun":"Danderyd","ort":"Danderyd","huvudman":"Kommunal","lat":59.402,"lng":18.033,"meritvarde":278,"behorighet":97,"np":16.4,"npSve":16,"npEng":18.2,"npMa":15,"andelGodkand":94,"lararbehorighet":86,"elever":260,"period":"2024/25","salsaActual":278,"salsaCalc":269,"salsaDev":9,"salsaReqDev":3,"salsaParents":2.6},{"kod":"00000017","namn":"Lommaskolan","kommun":"Lomma","ort":"Lomma","huvudman":"Kommunal","lat":55.67,"lng":13.07,"meritvarde":269,"behorighet":96,"np":16,"npSve":15.6,"npEng":17.9,"npMa":14.5,"andelGodkand":93,"lararbehorighet":84,"elever":240,"period":"2024/25","salsaActual":269,"salsaCalc":258,"salsaDev":11,"salsaReqDev":4,"salsaParents":2.6},{"kod":"00000018","namn":"Lidingö Hersby grundskola","kommun":"Lidingö","ort":"Lidingö","huvudman":"Kommunal","lat":59.364,"lng":18.13,"meritvarde":258,"behorighet":95,"np":15.5,"npSve":15.2,"npEng":17.5,"npMa":13.8,"andelGodkand":91,"lararbehorighet":82,"elever":300,"period":"2024/25","salsaActual":258,"salsaCalc":251,"salsaDev":7,"salsaReqDev":2,"salsaParents":2.5},{"kod":"00000019","namn":"Nacka Saltsjöbadens samskola","kommun":"Nacka","ort":"Saltsjöbaden","huvudman":"Fristående","lat":59.282,"lng":18.301,"meritvarde":266,"behorighet":96,"np":15.9,"npSve":15.6,"npEng":17.8,"npMa":14.3,"andelGodkand":92,"lararbehorighet":75,"elever":210,"period":"2024/25","salsaActual":266,"salsaCalc":254,"salsaDev":12,"salsaReqDev":4,"salsaParents":2.5},{"kod":"00000020","namn":"Malmö Latinskolas grundskola","kommun":"Malmö","ort":"Malmö","huvudman":"Kommunal","lat":55.605,"lng":13.003,"meritvarde":211,"behorighet":79,"np":11.9,"npSve":11.6,"npEng":13.9,"npMa":10.1,"andelGodkand":72,"lararbehorighet":73,"elever":280,"period":"2024/25","salsaActual":211,"salsaCalc":218,"salsaDev":-7,"salsaReqDev":-2,"salsaParents":2.1},{"kod":"00000021","namn":"Rosengårdsskolan","kommun":"Malmö","ort":"Malmö","huvudman":"Kommunal","lat":55.593,"lng":13.047,"meritvarde":176,"behorighet":58,"np":9.1,"npSve":8.6,"npEng":10.4,"npMa":8.2,"andelGodkand":52,"lararbehorighet":62,"elever":230,"period":"2024/25","salsaActual":176,"salsaCalc":198,"salsaDev":-22,"salsaReqDev":-7,"salsaParents":1.8},{"kod":"00000022","namn":"Spyken grundskola","kommun":"Lund","ort":"Lund","huvudman":"Kommunal","lat":55.705,"lng":13.193,"meritvarde":249,"behorighet":94,"np":14.9,"npSve":14.7,"npEng":17,"npMa":13,"andelGodkand":89,"lararbehorighet":83,"elever":250,"period":"2024/25","salsaActual":249,"salsaCalc":239,"salsaDev":10,"salsaReqDev":3,"salsaParents":2.4},{"kod":"00000023","namn":"Katedralskolans grundskola","kommun":"Uppsala","ort":"Uppsala","huvudman":"Kommunal","lat":59.859,"lng":17.639,"meritvarde":243,"behorighet":92,"np":14.3,"npSve":14.1,"npEng":16.5,"npMa":12.3,"andelGodkand":86,"lararbehorighet":81,"elever":270,"period":"2024/25","salsaActual":243,"salsaCalc":238,"salsaDev":5,"salsaReqDev":2,"salsaParents":2.4},{"kod":"00000024","namn":"Tunaskolan","kommun":"Linköping","ort":"Linköping","huvudman":"Kommunal","lat":58.41,"lng":15.621,"meritvarde":224,"behorighet":85,"np":12.8,"npSve":12.6,"npEng":14.8,"npMa":11,"andelGodkand":78,"lararbehorighet":77,"elever":300,"period":"2024/25","salsaActual":224,"salsaCalc":221,"salsaDev":3,"salsaReqDev":1,"salsaParents":2.2},{"kod":"00000025","namn":"Rosenlundsskolan","kommun":"Jönköping","ort":"Jönköping","huvudman":"Kommunal","lat":57.779,"lng":14.161,"meritvarde":220,"behorighet":84,"np":12.5,"npSve":12.3,"npEng":14.5,"npMa":10.7,"andelGodkand":77,"lararbehorighet":76,"elever":210,"period":"2024/25","salsaActual":220,"salsaCalc":222,"salsaDev":-2,"salsaReqDev":-1,"salsaParents":2.2},{"kod":"00000026","namn":"Karolinerskolan","kommun":"Helsingborg","ort":"Helsingborg","huvudman":"Kommunal","lat":56.05,"lng":12.694,"meritvarde":208,"behorighet":78,"np":11.7,"npSve":11.5,"npEng":13.6,"npMa":10,"andelGodkand":71,"lararbehorighet":72,"elever":230,"period":"2024/25","salsaActual":208,"salsaCalc":213,"salsaDev":-5,"salsaReqDev":-2,"salsaParents":2.1},{"kod":"00000027","namn":"Mariebergsskolan","kommun":"Örebro","ort":"Örebro","huvudman":"Kommunal","lat":59.27,"lng":15.21,"meritvarde":214,"behorighet":81,"np":12,"npSve":11.8,"npEng":13.8,"npMa":10.3,"andelGodkand":74,"lararbehorighet":74,"elever":260,"period":"2024/25","salsaActual":214,"salsaCalc":217,"salsaDev":-3,"salsaReqDev":-1,"salsaParents":2.1},{"kod":"00000028","namn":"Mariedalsskolan","kommun":"Umeå","ort":"Umeå","huvudman":"Kommunal","lat":63.826,"lng":20.263,"meritvarde":230,"behorighet":88,"np":13.2,"npSve":13,"npEng":15.3,"npMa":11.3,"andelGodkand":81,"lararbehorighet":80,"elever":240,"period":"2024/25","salsaActual":230,"salsaCalc":224,"salsaDev":6,"salsaReqDev":2,"salsaParents":2.3},{"kod":"00000029","namn":"Östra skolan","kommun":"Luleå","ort":"Luleå","huvudman":"Kommunal","lat":65.584,"lng":22.155,"meritvarde":223,"behorighet":85,"np":12.7,"npSve":12.5,"npEng":14.7,"npMa":10.9,"andelGodkand":78,"lararbehorighet":78,"elever":190,"period":"2024/25","salsaActual":223,"salsaCalc":219,"salsaDev":4,"salsaReqDev":1,"salsaParents":2.2},{"kod":"00000030","namn":"Högalidskolan","kommun":"Kiruna","ort":"Kiruna","huvudman":"Kommunal","lat":67.849,"lng":20.224,"meritvarde":205,"behorighet":77,"np":11.5,"npSve":11.3,"npEng":13.4,"npMa":9.8,"andelGodkand":70,"lararbehorighet":71,"elever":150,"period":"2024/25","salsaActual":205,"salsaCalc":214,"salsaDev":-9,"salsaReqDev":-3,"salsaParents":2}],"salsaPeriod":"2024/25"};
+
+/* ---------- i18n ---------- */
+const I18N = {
+  zh:{
+    title:'瑞典初中9年级成绩地图', subtitle:'Grundskolan årskurs 9 · 来源 Skolverket',
+    sample:'⚠ 当前是<b>示例数据</b>（30 所占位）。运行 <code>node fetch-data.mjs</code> 生成真实 data.json 后刷新即可。',
+    all:'全部', kommunal:'公立', fristaende:'私立',
+    allKommun:'所有 kommun', searchPh:'搜索学校…',
+    unit:'所', colSchool:'学校 / 排名', colKommun:'Kommun', colValue:'数值', empty:'没有符合条件的学校。',
+    metaTpl:(c,p,sp,s)=>`${c} 所学校 · 成绩 <b>${p||'—'}</b>${sp?` · SALSA ${sp}`:''} · 来源 ${s}`,
+    pupils:n=>`${n} 名学生`,
+    huvudLabel:{Kommunal:'公立',['Fristående']:'私立'},
+    metricNames:{meritvarde:'平均绩点 (meritvärde)',behorighet:'升学资格% (behörig YR)',np:'全国统考均分 (NP åk 9)',salsa:'SALSA 增值偏差'},
+    metricShort:{meritvarde:['平均绩点','meritvärde'],behorighet:['升学资格%','behörig'],np:['全国统考','NP'],salsa:['SALSA','偏差']},
+    salsaHelp:'实际成绩 − 按家庭背景预测值。正＝高于预期（绿），负＝低于预期（红）。这能减少生源差异的影响。',
+    pop:{merit:'平均绩点 meritvärde',beh:'升学资格 behörig%',np:'全国统考 NP 均分',sve:'· 瑞典语 SVE',eng:'· 英语 ENG',ma:'· 数学 MA',passed:'全科及格%',teacher:'教师资格%',salsaDev:'SALSA 偏差',salsaActual:'实际 meritvärde',salsaCalc:'预测 meritvärde',parents:'家长教育指数'},
+  },
+  sv:{
+    title:'Betygskarta – grundskolan åk 9', subtitle:'Källa: Skolverket',
+    sample:'⚠ Detta är <b>exempeldata</b> (30 platshållare). Kör <code>node fetch-data.mjs</code> för riktig data.json och ladda om.',
+    all:'Alla', kommunal:'Kommunal', fristaende:'Fristående',
+    allKommun:'Alla kommuner', searchPh:'Sök skola…',
+    unit:'skolor', colSchool:'Skola / placering', colKommun:'Kommun', colValue:'Värde', empty:'Inga skolor matchar filtret.',
+    metaTpl:(c,p,sp,s)=>`${c} skolor · betyg <b>${p||'—'}</b>${sp?` · SALSA ${sp}`:''} · källa ${s}`,
+    pupils:n=>`${n} elever`,
+    huvudLabel:{Kommunal:'Kommunal',['Fristående']:'Fristående'},
+    metricNames:{meritvarde:'Genomsnittligt meritvärde',behorighet:'Behörighet yrkesprogram %',np:'Nationella prov åk 9 (snitt)',salsa:'SALSA-avvikelse'},
+    metricShort:{meritvarde:['Meritvärde','snitt'],behorighet:['Behörig%','YR'],np:['Nat. prov','NP'],salsa:['SALSA','avvikelse']},
+    salsaHelp:'Faktiskt resultat − förväntat utifrån elevernas bakgrund. Plus = över förväntan (grön), minus = under (röd). Jämnare jämförelse mellan skolor.',
+    pop:{merit:'Meritvärde',beh:'Behörig% (YR)',np:'Nationella prov (snitt)',sve:'· Svenska SVE',eng:'· Engelska ENG',ma:'· Matematik MA',passed:'Godkänt i alla ämnen %',teacher:'Behöriga lärare %',salsaDev:'SALSA-avvikelse',salsaActual:'Faktiskt meritvärde',salsaCalc:'Förväntat meritvärde',parents:'Föräldrars utbildning'},
+  },
+  en:{
+    title:'Sweden grade-9 results map', subtitle:'Compulsory school year 9 · source: Skolverket',
+    sample:'⚠ This is <b>sample data</b> (30 placeholders). Run <code>node fetch-data.mjs</code> to build the real data.json, then reload.',
+    all:'All', kommunal:'Public', fristaende:'Independent',
+    allKommun:'All municipalities', searchPh:'Search school…',
+    unit:'schools', colSchool:'School / rank', colKommun:'Municipality', colValue:'Value', empty:'No schools match the filter.',
+    metaTpl:(c,p,sp,s)=>`${c} schools · grades <b>${p||'—'}</b>${sp?` · SALSA ${sp}`:''} · source ${s}`,
+    pupils:n=>`${n} pupils`,
+    huvudLabel:{Kommunal:'Public',['Fristående']:'Independent'},
+    metricNames:{meritvarde:'Average merit value (meritvärde)',behorighet:'Eligibility for upper sec. %',np:'National tests yr 9 (avg)',salsa:'SALSA value-added deviation'},
+    metricShort:{meritvarde:['Merit','meritvärde'],behorighet:['Eligible%','behörig'],np:['Nat. tests','NP'],salsa:['SALSA','deviation']},
+    salsaHelp:'Actual result − expected from pupils’ background. Positive = above expectation (green), negative = below (red). A fairer cross-school comparison.',
+    pop:{merit:'Merit value',beh:'Eligibility % (vocational)',np:'National tests (avg)',sve:'· Swedish SVE',eng:'· English ENG',ma:'· Maths MA',passed:'Passed all subjects %',teacher:'Certified teachers %',salsaDev:'SALSA deviation',salsaActual:'Actual merit value',salsaCalc:'Expected merit value',parents:'Parental education index'},
+  },
+};
+
+const METRICS = {
+  meritvarde:{field:'meritvarde', dom:[170,300], unit:'', dec:0},
+  behorighet:{field:'behorighet', dom:[55,100], unit:'%', dec:0},
+  np:        {field:'np',         dom:[9,18],  unit:'', dec:1},
+  salsa:     {field:'salsaDev',   dom:[-30,30],unit:'', dec:0, diverging:true},
+};
+
+let lang = 'zh';
+try{ const s=localStorage.getItem('skolkarta_lang'); if(s&&I18N[s]) lang=s;
+     else { const n=(navigator.language||'').slice(0,2); if(I18N[n]) lang=n; } }catch(e){}
+
+let state = {metric:'meritvarde', huvud:'', kommun:'', q:'', sort:'metric', dir:'desc'};
+let DATA=[], META={}, markers=new Map(), map, layer, active=null;
+
+const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---------- color ---------- */
+const SEQ=[[177,75,63],[231,193,94],[47,125,107]];   // lo,mid,hi
+const NEU=[236,233,223];
+function color(metricKey,v){
+  if(v==null||isNaN(v)) return getCSS('--none');
+  const M=METRICS[metricKey];
+  if(M.diverging){
+    const D=M.dom[1]; let t=Math.max(-1,Math.min(1,v/D));
+    const b=t<0?SEQ[0]:SEQ[2], k=Math.abs(t);
+    const c=NEU.map((x,i)=>Math.round(x+(b[i]-x)*k));
+    return `rgb(${c[0]},${c[1]},${c[2]})`;
+  }
+  const [lo,hi]=M.dom; let t=Math.max(0,Math.min(1,(v-lo)/(hi-lo)));
+  const seg=t<.5?0:1, lt=t<.5?t/.5:(t-.5)/.5;
+  const c=SEQ[seg].map((x,i)=>Math.round(x+(SEQ[seg+1][i]-x)*lt));
+  return `rgb(${c[0]},${c[1]},${c[2]})`;
+}
+const getCSS=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+function fmt(v,metricKey){
+  if(v==null||isNaN(v)) return '—';
+  const M=METRICS[metricKey], s=v.toFixed(M.dec)+M.unit;
+  return (M.diverging && v>0) ? '+'+s : s;
+}
+
+/* ---------- load ---------- */
+async function load(){
+  let d=null;
+  try{ const r=await fetch('./data.json',{cache:'no-store'}); if(r.ok) d=await r.json(); }catch(e){}
+  if(!d||!d.schools||!d.schools.length) d=SAMPLE;
+  DATA=d.schools; META=d;
+  const isSample=d.sample||(d.source&&/EXEMPEL/i.test(d.source));
+  if(isSample) $('#sampleFlag').classList.add('on');
+  initMap(); buildKommunOptions();
+  applyLang(); render();
+}
+function initMap(){
+  map=L.map('map',{preferCanvas:true}).setView([62.0,15.0],4);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+    {attribution:'© OpenStreetMap, © CARTO',subdomains:'abcd',maxZoom:19}).addTo(map);
+  layer=L.layerGroup().addTo(map);
+}
+function buildKommunOptions(){
+  const sel=$('#kommun'), koms=[...new Set(DATA.map(s=>s.kommun).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'sv'));
+  for(const k of koms){const o=document.createElement('option');o.value=k;o.textContent=k;sel.appendChild(o);}
+}
+
+/* ---------- language ---------- */
+function applyLang(){
+  const t=I18N[lang]; document.documentElement.lang=lang; document.title=t.title;
+  $('#h1').textContent=t.title; $('#subtitle').textContent=t.subtitle;
+  $('#sampleFlag').innerHTML=t.sample;
+  $$('#metricSeg [data-metric]').forEach(b=>{const[a,s]=t.metricShort[b.dataset.metric];b.innerHTML=`${a} <span class="sub">${s}</span>`;});
+  $$('#huvudSeg [data-huvud]').forEach(b=>{b.textContent=b.dataset.huvud===''?t.all:(b.dataset.huvud==='Kommunal'?t.kommunal:t.fristaende);});
+  $$('#langSeg [data-lang]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.lang===lang));
+  $('#kommun').options[0].textContent=t.allKommun;
+  $('#q').placeholder=t.searchPh;
+  $('#shownUnit').textContent=t.unit;
+  $('#thSchool').textContent=t.colSchool; $('#thKommun').textContent=t.colKommun; $('#thValue').textContent=t.colValue;
+  $('#empty').textContent=t.empty;
+  $('#meta').innerHTML=t.metaTpl(META.count||DATA.length, META.latestPeriod, META.salsaPeriod,
+    (META.source||'').replace(/EXEMPEL.*/i,'sample'));
+}
+
+/* ---------- filter + sort ---------- */
+function filtered(){
+  const q=state.q.trim().toLowerCase();
+  return DATA.filter(s=>{
+    if(state.huvud && s.huvudman!==state.huvud) return false;
+    if(state.kommun && s.kommun!==state.kommun) return false;
+    if(q && !(`${s.namn} ${s.kommun} ${s.ort||''}`.toLowerCase().includes(q))) return false;
+    return true;
+  });
+}
+function sortRows(rows){
+  const key = state.sort==='metric' ? METRICS[state.metric].field : state.sort;
+  const isStr = typeof (rows.find(r=>r[key]!=null)?.[key]) === 'string';
+  const arr=rows.slice().sort((a,b)=>{
+    let x=a[key], y=b[key]; const xn=(x==null||x===''), yn=(y==null||y==='');
+    if(xn&&yn)return 0; if(xn)return 1; if(yn)return -1;
+    return isStr ? String(x).localeCompare(String(y),'sv') : x-y;
+  });
+  if(state.dir==='desc') arr.reverse();
+  if(!isStr){ const has=arr.filter(r=>r[key]!=null&&r[key]!==''), no=arr.filter(r=>r[key]==null||r[key]===''); return [...has,...no]; }
+  return arr;
+}
+
+/* ---------- render ---------- */
+function setLegend(){
+  const m=state.metric, M=METRICS[m], t=I18N[lang];
+  if(M.diverging){
+    $('#bar').style.background='linear-gradient(90deg, rgb(177,75,63), rgb(236,233,223), rgb(47,125,107))';
+    $('#legLo').textContent=M.dom[0]; $('#legMid').textContent='0'; $('#legHi').textContent='+'+M.dom[1];
+    $('#legMid').style.display='';
+  }else{
+    $('#bar').style.background='linear-gradient(90deg,var(--lo),var(--mid),var(--hi))';
+    $('#legLo').textContent=M.dom[0]+M.unit; $('#legHi').textContent=M.dom[1]+M.unit; $('#legMid').style.display='none';
+  }
+  const help=$('#metricHelp');
+  if(m==='salsa'){ help.textContent=t.salsaHelp; help.style.display='block'; } else help.style.display='none';
+}
+function render(){
+  const m=state.metric, M=METRICS[m], f=M.field, t=I18N[lang];
+  $('#metricName').textContent=t.metricNames[m];
+  setLegend();
+  const rows=filtered(); $('#shown').textContent=rows.length;
+
+  layer.clearLayers(); markers.clear();
+  for(const s of rows.filter(s=>s.lat&&s.lng)){
+    const mk=L.circleMarker([s.lat,s.lng],{radius:6,color:'#fff',weight:1.1,fillColor:color(m,s[f]),fillOpacity:.92})
+      .bindPopup(popup(s),{maxWidth:270});
+    mk.on('click',()=>setActive(s.kod,false)); mk.addTo(layer); markers.set(s.kod,mk);
+  }
+
+  const sorted=sortRows(rows), rank=state.sort==='metric'&&state.dir==='desc';
+  const tb=$('#tbody'); tb.innerHTML='';
+  sorted.forEach((s,i)=>{
+    const v=s[f], tr=document.createElement('tr'); tr.dataset.kod=s.kod;
+    tr.innerHTML=
+      `<td><span class="skola">${rank?`<span class="kom">${i+1}.</span> `:''}${esc(s.namn)}</span>`+
+      `<div class="kom">${s.huvudman?(t.huvudLabel[s.huvudman]||s.huvudman):''}${s.elever?` · ${t.pupils(s.elever)}`:''}</div></td>`+
+      `<td class="kom">${esc(s.kommun||'—')}</td>`+
+      `<td class="numcol"><span class="val tnum">${fmt(v,m)}<span class="dot" style="background:${color(m,v)}"></span></span></td>`;
+    tr.addEventListener('click',()=>setActive(s.kod,true)); tb.appendChild(tr);
+  });
+  $('#empty').hidden=sorted.length>0;
+  if(active&&!markers.has(active)) active=null;
+  updateSortHeaders();
+}
+function popup(s){
+  const t=I18N[lang].pop, g=(l,v,k)=>`<span>${l}</span><span>${fmt(v,k)}</span>`;
+  return `<div class="pop"><b>${esc(s.namn)}</b><div class="pk">${esc(s.kommun||'')}${s.huvudman?' · '+(I18N[lang].huvudLabel[s.huvudman]||s.huvudman):''}${s.period?' · '+s.period:''}</div><div class="grid">`+
+    g(t.merit,s.meritvarde,'meritvarde')+g(t.beh,s.behorighet,'behorighet')+g(t.np,s.np,'np')+
+    (s.npSve!=null?`<span>${t.sve}</span><span>${fmt(s.npSve,'np')}</span>`:'')+
+    (s.npEng!=null?`<span>${t.eng}</span><span>${fmt(s.npEng,'np')}</span>`:'')+
+    (s.npMa!=null?`<span>${t.ma}</span><span>${fmt(s.npMa,'np')}</span>`:'')+
+    (s.salsaDev!=null?g(t.salsaDev,s.salsaDev,'salsa'):'')+
+    (s.salsaActual!=null?`<span>${t.salsaActual}</span><span>${s.salsaActual}</span>`:'')+
+    (s.salsaCalc!=null?`<span>${t.salsaCalc}</span><span>${s.salsaCalc}</span>`:'')+
+    (s.andelGodkand!=null?`<span>${t.passed}</span><span>${fmt(s.andelGodkand,'behorighet')}</span>`:'')+
+    (s.lararbehorighet!=null?`<span>${t.teacher}</span><span>${fmt(s.lararbehorighet,'behorighet')}</span>`:'')+
+    `</div></div>`;
+}
+function setActive(kod,fly){
+  active=kod;
+  $$('#tbody tr').forEach(tr=>{const on=tr.dataset.kod===kod;tr.classList.toggle('active',on);if(on)tr.scrollIntoView({block:'nearest'});});
+  const mk=markers.get(kod); if(mk){ if(fly)map.flyTo(mk.getLatLng(),Math.max(map.getZoom(),9),{duration:.6}); mk.openPopup(); }
+}
+function updateSortHeaders(){
+  $$('thead th').forEach(th=>{
+    if(th.dataset.sort===state.sort){th.setAttribute('aria-sort',state.dir==='asc'?'ascending':'descending');th.querySelector('.ar').textContent=state.dir==='asc'?'▲':'▼';}
+    else{th.removeAttribute('aria-sort');th.querySelector('.ar').textContent='▲▼';}
+  });
+}
+
+/* ---------- events ---------- */
+$$('#metricSeg [data-metric]').forEach(b=>b.onclick=()=>{
+  state.metric=b.dataset.metric;
+  $$('#metricSeg [data-metric]').forEach(x=>x.setAttribute('aria-pressed',x===b));
+  render();
+});
+$$('#huvudSeg [data-huvud]').forEach(b=>b.onclick=()=>{
+  state.huvud=b.dataset.huvud;
+  $$('#huvudSeg [data-huvud]').forEach(x=>x.setAttribute('aria-pressed',x===b));
+  render();
+});
+$$('#langSeg [data-lang]').forEach(b=>b.onclick=()=>{
+  lang=b.dataset.lang; try{localStorage.setItem('skolkarta_lang',lang);}catch(e){}
+  applyLang(); render();
+});
+$('#kommun').onchange=e=>{
+  state.kommun=e.target.value; render();
+  const rows=filtered().filter(s=>s.lat&&s.lng);
+  if(state.kommun&&rows.length) map.fitBounds(L.latLngBounds(rows.map(s=>[s.lat,s.lng])).pad(.3));
+};
+let qt; $('#q').oninput=e=>{clearTimeout(qt);qt=setTimeout(()=>{state.q=e.target.value;render();},120);};
+$$('thead th').forEach(th=>th.onclick=()=>{
+  const key=th.dataset.sort;
+  if(state.sort===key) state.dir=state.dir==='asc'?'desc':'asc';
+  else{state.sort=key; state.dir=(key==='namn'||key==='kommun')?'asc':'desc';}
+  render();
+});
+
+load();
+</script>
+</body>
+</html>
