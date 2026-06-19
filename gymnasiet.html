@@ -41,6 +41,18 @@
   .bar{height:9px;border-radius:5px;background:linear-gradient(90deg,var(--lo),var(--mid),var(--hi))}
   .leglabs{display:flex;justify-content:space-between;font-size:11px;color:var(--muted)}
   .help{font-size:11.5px;line-height:1.45;color:var(--muted);padding:8px 14px 10px;border-bottom:1px solid var(--hair2)}
+  .iconbtn{appearance:none;border:1px solid var(--hair);background:var(--panel);color:var(--muted);min-width:38px;min-height:38px;border-radius:9px;cursor:pointer;font-size:15px}
+  .iconbtn:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+  .backdrop{position:fixed;inset:0;background:rgba(20,25,38,.4);display:none;z-index:1000}
+  .backdrop.on{display:block}
+  .panel{position:fixed;z-index:1001;left:50%;top:50%;transform:translate(-50%,-50%);width:min(580px,92vw);max-height:82vh;overflow:auto;background:var(--panel);border:1px solid var(--hair);border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.28);padding:16px 18px;display:none}
+  .panel.on{display:block}
+  .panel h3{margin:0 0 4px;font-size:15px}
+  .panel .lead{color:var(--muted);font-size:12px;margin-bottom:8px}
+  .panel .cat{margin-top:14px;font-size:12px;font-weight:700;color:var(--brand)}
+  .panel .pi{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:12.5px;margin-top:5px}
+  .panel .pi b{white-space:nowrap}
+  .panel .x{position:absolute;top:10px;right:14px;border:0;background:transparent;font-size:20px;line-height:1;cursor:pointer;color:var(--muted)}
   .tablewrap{overflow:auto;min-height:0}
   table{width:100%;border-collapse:collapse;font-size:13px}
   thead th{position:sticky;top:0;background:var(--panel);z-index:1;text-align:left;padding:9px 12px;border-bottom:1px solid var(--hair);color:var(--muted);font-weight:600;cursor:pointer;white-space:nowrap;user-select:none}
@@ -90,6 +102,7 @@
       </div>
       <div class="spacer"></div>
       <select id="program" aria-label="program"><option value=""></option></select>
+      <button id="progInfoBtn" class="iconbtn" type="button">ⓘ</button>
       <select id="kommun"><option value=""></option></select>
       <label class="search">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
@@ -114,6 +127,8 @@
     </aside>
   </div>
 </div>
+<div class="backdrop" id="progBackdrop"></div>
+<div class="panel" id="progPanel" role="dialog" aria-modal="true"><button class="x" id="progPanelClose" aria-label="close">×</button><div id="progPanelBody"></div></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
 const SAMPLE = {"generatedAt":"2026-06-19T00:00:00.000Z","source":"EXEMPELDATA (platshållare) – byt mot riktig data via fetch-data-gy.mjs","sample":true,"level":"gymnasium","count":14,"latestPeriod":"2024","schools":[{"kod":"7078252","namn":"Hulebäcksgymnasiet","kommun":"Härryda","ort":"Mölnlycke","huvudman":"Kommunal","lat":57.659,"lng":12.119,"elever":560,"lararbehorighet":83,"programs":[{"c":"NA","n":120,"a":305,"am":290,"ay":"2024","g":15.1,"ge":15.8,"e":87,"h":92,"ns":13.3,"ne":15.3,"nm":10.8},{"c":"TE","n":110,"a":290,"am":275,"ay":"2024","g":14.5,"ge":15.2,"e":85,"h":90,"ns":13,"ne":15,"nm":10.5},{"c":"SA","n":140,"a":280,"am":265,"ay":"2024","g":14.1,"ge":14.8,"e":83,"h":88,"ns":12.8,"ne":14.8,"nm":10.3},{"c":"EK","n":130,"a":285,"am":270,"ay":"2024","g":14.3,"ge":15,"e":84,"h":89,"ns":12.9,"ne":14.9,"nm":10.4},{"c":"ES","n":60,"a":260,"am":245,"ay":"2024","g":13.5,"ge":14.2,"e":80,"h":85,"ns":12.5,"ne":14.5,"nm":10}]},{"kod":"7979597","namn":"Hvitfeldtska gymnasiet","kommun":"Göteborg","ort":"Göteborg","huvudman":"Kommunal","lat":57.7,"lng":11.952,"elever":580,"lararbehorighet":85,"programs":[{"c":"NA","n":150,"a":320,"am":305,"ay":"2024","g":15.4,"ge":16.1,"e":88,"h":93,"ns":13.4,"ne":15.4,"nm":10.9},{"c":"SA","n":180,"a":305,"am":290,"ay":"2024","g":14.7,"ge":15.4,"e":86,"h":91,"ns":13.1,"ne":15.1,"nm":10.6},{"c":"EK","n":160,"a":308,"am":293,"ay":"2024","g":14.8,"ge":15.5,"e":86,"h":91,"ns":13.2,"ne":15.2,"nm":10.7},{"c":"ES","n":90,"a":285,"am":270,"ay":"2024","g":13.9,"ge":14.6,"e":82,"h":87,"ns":12.7,"ne":14.7,"nm":10.2}]},{"kod":"7454295","namn":"Polhemsgymnasiet","kommun":"Göteborg","ort":"Göteborg","huvudman":"Kommunal","lat":57.706,"lng":11.94,"elever":320,"lararbehorighet":79,"programs":[{"c":"TE","n":200,"a":270,"am":255,"ay":"2024","g":14.3,"ge":15,"e":84,"h":89,"ns":12.9,"ne":14.9,"nm":10.4},{"c":"EE","n":80,"a":230,"am":215,"ay":"2024","g":12.9,"ge":13.6,"e":77,"h":82,"ns":12.2,"ne":14.2,"nm":9.7},{"c":"IN","n":40,"a":215,"am":200,"ay":"2024","g":12.5,"ge":13.2,"e":75,"h":80,"ns":12,"ne":14,"nm":9.5}]},{"kod":"7611969","namn":"IT-Gymnasiet Göteborg","kommun":"Göteborg","ort":"Göteborg","huvudman":"Fristående","lat":57.708,"lng":11.974,"elever":240,"lararbehorighet":75,"programs":[{"c":"TE","n":150,"a":245,"am":230,"ay":"2024","g":13.9,"ge":14.6,"e":81,"h":86,"ns":12.7,"ne":14.7,"nm":10.2},{"c":"EK","n":90,"a":238,"am":223,"ay":"2024","g":13.6,"ge":14.3,"e":80,"h":85,"ns":12.6,"ne":14.6,"nm":10.1}]},{"kod":"7693326","namn":"Aranäsgymnasiet","kommun":"Kungsbacka","ort":"Kungsbacka","huvudman":"Kommunal","lat":57.487,"lng":12.076,"elever":380,"lararbehorighet":80,"programs":[{"c":"NA","n":110,"a":285,"am":270,"ay":"2024","g":14.7,"ge":15.4,"e":85,"h":90,"ns":13.1,"ne":15.1,"nm":10.6},{"c":"SA","n":120,"a":270,"am":255,"ay":"2024","g":14.1,"ge":14.8,"e":83,"h":88,"ns":12.8,"ne":14.8,"nm":10.3},{"c":"EK","n":100,"a":273,"am":258,"ay":"2024","g":14.2,"ge":14.9,"e":83,"h":88,"ns":12.8,"ne":14.8,"nm":10.3},{"c":"VO","n":50,"a":230,"am":215,"ay":"2024","g":12.7,"ge":13.4,"e":76,"h":81,"ns":12.1,"ne":14.1,"nm":9.6}]},{"kod":"7066252","namn":"Katedralskolan Lund","kommun":"Lund","ort":"Lund","huvudman":"Kommunal","lat":55.704,"lng":13.194,"elever":490,"lararbehorighet":89,"programs":[{"c":"NA","n":160,"a":337,"am":322,"ay":"2024","g":15.6,"ge":16.3,"e":89,"h":94,"ns":13.6,"ne":15.6,"nm":11.1},{"c":"SA","n":150,"a":325,"am":310,"ay":"2024","g":15,"ge":15.7,"e":87,"h":92,"ns":13.3,"ne":15.3,"nm":10.8},{"c":"EK","n":140,"a":327,"am":312,"ay":"2024","g":15.1,"ge":15.8,"e":87,"h":92,"ns":13.3,"ne":15.3,"nm":10.8},{"c":"HU","n":40,"a":305,"am":290,"ay":"2024","g":14.1,"ge":14.8,"e":83,"h":88,"ns":12.8,"ne":14.8,"nm":10.3}]},{"kod":"7887374","namn":"Norra Real","kommun":"Stockholm","ort":"Stockholm","huvudman":"Kommunal","lat":59.341,"lng":18.054,"elever":290,"lararbehorighet":90,"programs":[{"c":"NA","n":170,"a":341,"am":326,"ay":"2024","g":15.7,"ge":16.4,"e":89,"h":94,"ns":13.6,"ne":15.6,"nm":11.1},{"c":"TE","n":120,"a":326,"am":311,"ay":"2024","g":14.9,"ge":15.6,"e":86,"h":91,"ns":13.2,"ne":15.2,"nm":10.7}]},{"kod":"7574802","namn":"Danderyds gymnasium","kommun":"Danderyd","ort":"Danderyd","huvudman":"Kommunal","lat":59.402,"lng":18.033,"elever":460,"lararbehorighet":88,"programs":[{"c":"NA","n":150,"a":330,"am":315,"ay":"2024","g":15.5,"ge":16.2,"e":88,"h":93,"ns":13.5,"ne":15.5,"nm":11},{"c":"SA","n":160,"a":318,"am":303,"ay":"2024","g":14.8,"ge":15.5,"e":86,"h":91,"ns":13.2,"ne":15.2,"nm":10.7},{"c":"EK","n":150,"a":322,"am":307,"ay":"2024","g":15,"ge":15.7,"e":87,"h":92,"ns":13.3,"ne":15.3,"nm":10.8}]},{"kod":"7227285","namn":"Östra Real","kommun":"Stockholm","ort":"Stockholm","huvudman":"Kommunal","lat":59.339,"lng":18.09,"elever":330,"lararbehorighet":87,"programs":[{"c":"NA","n":160,"a":321,"am":306,"ay":"2024","g":15.3,"ge":16,"e":87,"h":92,"ns":13.4,"ne":15.4,"nm":10.9},{"c":"SA","n":170,"a":308,"am":293,"ay":"2024","g":14.6,"ge":15.3,"e":85,"h":90,"ns":13.1,"ne":15.1,"nm":10.6}]},{"kod":"7573511","namn":"Malmö Latinskola","kommun":"Malmö","ort":"Malmö","huvudman":"Kommunal","lat":55.605,"lng":13.003,"elever":360,"lararbehorighet":80,"programs":[{"c":"NA","n":120,"a":278,"am":263,"ay":"2024","g":14.5,"ge":15.2,"e":84,"h":89,"ns":13,"ne":15,"nm":10.5},{"c":"SA","n":150,"a":266,"am":251,"ay":"2024","g":14,"ge":14.7,"e":82,"h":87,"ns":12.8,"ne":14.8,"nm":10.3},{"c":"ES","n":90,"a":258,"am":243,"ay":"2024","g":13.7,"ge":14.4,"e":81,"h":86,"ns":12.6,"ne":14.6,"nm":10.1}]},{"kod":"7749702","namn":"Katedralskolan Uppsala","kommun":"Uppsala","ort":"Uppsala","huvudman":"Kommunal","lat":59.859,"lng":17.639,"elever":420,"lararbehorighet":84,"programs":[{"c":"NA","n":150,"a":307,"am":292,"ay":"2024","g":15.1,"ge":15.8,"e":87,"h":92,"ns":13.3,"ne":15.3,"nm":10.8},{"c":"SA","n":140,"a":293,"am":278,"ay":"2024","g":14.4,"ge":15.1,"e":84,"h":89,"ns":12.9,"ne":14.9,"nm":10.4},{"c":"EK","n":130,"a":295,"am":280,"ay":"2024","g":14.5,"ge":15.2,"e":84,"h":89,"ns":13,"ne":15,"nm":10.5}]},{"kod":"7960277","namn":"Berzeliusskolan","kommun":"Linköping","ort":"Linköping","huvudman":"Kommunal","lat":58.41,"lng":15.621,"elever":370,"lararbehorighet":82,"programs":[{"c":"NA","n":140,"a":296,"am":281,"ay":"2024","g":14.9,"ge":15.6,"e":86,"h":91,"ns":13.2,"ne":15.2,"nm":10.7},{"c":"TE","n":120,"a":286,"am":271,"ay":"2024","g":14.4,"ge":15.1,"e":84,"h":89,"ns":12.9,"ne":14.9,"nm":10.4},{"c":"SA","n":110,"a":278,"am":263,"ay":"2024","g":14,"ge":14.7,"e":82,"h":87,"ns":12.8,"ne":14.8,"nm":10.3}]},{"kod":"7437698","namn":"Per Brahegymnasiet","kommun":"Jönköping","ort":"Jönköping","huvudman":"Kommunal","lat":57.779,"lng":14.161,"elever":235,"lararbehorighet":78,"programs":[{"c":"EK","n":120,"a":260,"am":245,"ay":"2024","g":14,"ge":14.7,"e":82,"h":87,"ns":12.8,"ne":14.8,"nm":10.3},{"c":"BF","n":60,"a":222,"am":207,"ay":"2024","g":12.7,"ge":13.4,"e":76,"h":81,"ns":12.1,"ne":14.1,"nm":9.6},{"c":"VO","n":55,"a":218,"am":203,"ay":"2024","g":12.6,"ge":13.3,"e":75,"h":80,"ns":12.1,"ne":14.1,"nm":9.6}]},{"kod":"7993713","namn":"Hjalmar Lundbohmsskolan","kommun":"Kiruna","ort":"Kiruna","huvudman":"Kommunal","lat":67.85,"lng":20.224,"elever":170,"lararbehorighet":73,"programs":[{"c":"NA","n":60,"a":245,"am":230,"ay":"2024","g":14.2,"ge":14.9,"e":83,"h":88,"ns":12.8,"ne":14.8,"nm":10.3},{"c":"SA","n":70,"a":228,"am":213,"ay":"2024","g":13.4,"ge":14.1,"e":79,"h":84,"ns":12.4,"ne":14.4,"nm":9.9},{"c":"IN","n":40,"a":185,"am":170,"ay":"2024","g":12.3,"ge":13,"e":73,"h":78,"ns":11.9,"ne":13.9,"nm":9.4}]}]};
@@ -131,6 +146,40 @@ const PROG = {
   VO:{sv:'Vård- och omsorg',zh:'护理',en:'Health & social care'}, IM:{sv:'Introduktionsprogram',zh:'预备项目',en:'Introductory'},
 };
 const progName=(c,l)=>PROG[c]?PROG[c][l]:c;
+const CAT={
+  zh:{prep:'大学预备项目',voc:'职业项目',intro:'预备/衔接项目'},
+  sv:{prep:'Högskoleförberedande',voc:'Yrkesprogram',intro:'Introduktionsprogram'},
+  en:{prep:'University-preparatory',voc:'Vocational',intro:'Introductory'}
+};
+const PANELT={
+  zh:{t:'高中项目说明',lead:'瑞典高中分三类：大学预备、职业、预备衔接。录取分、绩点不宜跨类直接比。',btn:'项目说明'},
+  sv:{t:'Gymnasieprogram',lead:'Tre typer: högskoleförberedande, yrkes- och introduktionsprogram. Jämför helst inom samma typ.',btn:'Om program'},
+  en:{t:'Upper-secondary programs',lead:'Three types: university-preparatory, vocational and introductory. Compare within a type.',btn:'About programs'}
+};
+const PROGINFO={
+  NA:{cat:'prep',zh:'偏数学与自然科学，通向理工、医学等高校专业。',sv:'Matematik och naturvetenskap; mot tekniska och medicinska utbildningar.',en:'Maths & natural sciences; routes to STEM and medicine.'},
+  TE:{cat:'prep',zh:'工程与技术，含设计、信息技术、生产等。',sv:'Teknik och ingenjörsämnen; design, IT, produktion.',en:'Engineering & technology; design, IT, production.'},
+  SA:{cat:'prep',zh:'社会科学：社会、行为、媒体与法律基础。',sv:'Samhälls-, beteende- och medievetenskap.',en:'Social, behavioural & media studies.'},
+  EK:{cat:'prep',zh:'经济、商业与法律。',sv:'Ekonomi, företagande och juridik.',en:'Economics, business & law.'},
+  ES:{cat:'prep',zh:'艺术：音乐、美术、戏剧、舞蹈、媒体等。',sv:'Estetik: musik, bild, teater, dans, medier.',en:'Arts: music, art, theatre, dance, media.'},
+  HU:{cat:'prep',zh:'人文：语言、历史与文化。',sv:'Humaniora: språk, historia och kultur.',en:'Humanities: languages, history, culture.'},
+  BA:{cat:'voc',zh:'建筑与土木施工。',sv:'Bygg och anläggning.',en:'Building & civil construction.'},
+  BF:{cat:'voc',zh:'儿童照护、休闲与教育工作。',sv:'Arbete med barn, fritid och pedagogik.',en:'Childcare, recreation & pedagogy.'},
+  EE:{cat:'voc',zh:'电气、能源与自动化。',sv:'El, energi och automation.',en:'Electrical, energy & automation.'},
+  FT:{cat:'voc',zh:'车辆维修与运输。',sv:'Fordon och transport.',en:'Vehicles & transport.'},
+  FF:{cat:'voc',zh:'销售、零售与服务（Gy25，取代旧 Handel）。',sv:'Försäljning, handel och service (Gy25).',en:'Sales, retail & service (Gy25).'},
+  HA:{cat:'voc',zh:'零售与行政（旧 Gy11 项目）。',sv:'Handel och administration (Gy11).',en:'Retail & administration (Gy11).'},
+  HV:{cat:'voc',zh:'手工艺（美发、花艺、设计制作等）。',sv:'Hantverk (frisör, florist, design m.m.).',en:'Crafts (hair, floristry, design, etc.).'},
+  HT:{cat:'voc',zh:'酒店、餐旅与旅游。',sv:'Hotell och turism.',en:'Hotel & tourism.'},
+  IN:{cat:'voc',zh:'工业生产与制造技术。',sv:'Industriell produktion och teknik.',en:'Industrial production & technology.'},
+  NB:{cat:'voc',zh:'农林、园艺、动物与自然管理。',sv:'Naturbruk: lantbruk, skog, djur, trädgård.',en:'Agriculture, forestry, animals & nature.'},
+  RL:{cat:'voc',zh:'餐饮与食品。',sv:'Restaurang och livsmedel.',en:'Restaurant & food.'},
+  VF:{cat:'voc',zh:'管道供暖(VVS)与物业。',sv:'VVS och fastighet.',en:'Plumbing/HVAC & property.'},
+  VO:{cat:'voc',zh:'护理与社会照护。',sv:'Vård och omsorg.',en:'Health & social care.'},
+  IM:{cat:'intro',zh:'预备/衔接：给尚未取得国家项目资格的学生（语言、补习、个别方案），通常无录取分。',sv:'För elever som ännu inte är behöriga till ett nationellt program; oftast ingen antagningspoäng.',en:'For pupils not yet eligible for a national program; usually no admission points.'}
+};
+const progInfo=c=>PROGINFO[c]||(String(c).startsWith('IM')?PROGINFO.IM:null);
+
 
 const I18N={
   zh:{title:'瑞典高中成绩地图',subtitle:'Gymnasiet · 来源 Skolverket',navGr:'小学',navGy:'高中',
@@ -248,6 +297,12 @@ function applyLang(){
   $('#thSchool').textContent=t.colSchool;$('#thKommun').textContent=t.colKommun;$('#thValue').textContent=t.colValue;
   $('#empty').textContent=t.empty;
   $('#meta').innerHTML=t.metaTpl(META.count||DATA.length,META.latestPeriod,(META.source||'').replace(/EXEMPEL.*/i,'sample'));
+  $('#progInfoBtn').title=PANELT[lang].btn;
+  const order=['prep','voc','intro'],groups={prep:[],voc:[],intro:[]};
+  Object.keys(PROGINFO).forEach(c=>groups[PROGINFO[c].cat].push(c));
+  let ph='<h3>'+PANELT[lang].t+'</h3><div class="lead">'+PANELT[lang].lead+'</div>';
+  for(const cat of order){ph+='<div class="cat">'+CAT[lang][cat]+'</div><div class="pi">';for(const c of groups[cat])ph+='<b>'+c+' '+progName(c,lang)+'</b><span>'+PROGINFO[c][lang]+'</span>';ph+='</div>';}
+  $('#progPanelBody').innerHTML=ph;
 }
 function filtered(){
   const q=state.q.trim().toLowerCase();
@@ -273,7 +328,7 @@ function sortRows(rows){
   if(!isStr){const has=[],no=[];arr.forEach(s=>{(valOf(s)==null?no:has).push(s);});return [...has,...no];}
   return arr;
 }
-function setLegend(){const M=METRICS[state.metric];$('#legLo').textContent=M.dom[0]+M.unit;$('#legHi').textContent=M.dom[1]+M.unit;const note=state.program?GPROG[lang].one:GPROG[lang].avg;$('#metricHelp').innerHTML=HELP[lang][state.metric]+'<br><span style="opacity:.85">'+note+'</span>';}
+function setLegend(){const M=METRICS[state.metric];$('#legLo').textContent=M.dom[0]+M.unit;$('#legHi').textContent=M.dom[1]+M.unit;let lead;if(state.program){const info=progInfo(state.program),nm=progName(state.program,lang),cat=info?CAT[lang][info.cat]:'';lead='<b>'+state.program+' '+nm+'</b>'+(cat?' · '+cat:'')+(info?'：'+info[lang]:'');}else{lead=GPROG[lang].avg;}$('#metricHelp').innerHTML=lead+'<br><span style="opacity:.85">'+HELP[lang][state.metric]+'</span>';}
 function render(){
   const m=state.metric,t=I18N[lang];
   $('#metricName').textContent=t.metricNames[m]+(state.program?` · ${state.program}`:'');
@@ -327,6 +382,10 @@ $$('#metricSeg [data-metric]').forEach(b=>b.onclick=()=>{state.metric=b.dataset.
 $$('#huvudSeg [data-huvud]').forEach(b=>b.onclick=()=>{state.huvud=b.dataset.huvud;$$('#huvudSeg [data-huvud]').forEach(x=>x.setAttribute('aria-pressed',x===b));render();});
 $$('#langSeg [data-lang]').forEach(b=>b.onclick=()=>{lang=b.dataset.lang;try{localStorage.setItem('skolkarta_lang',lang);}catch(e){}applyLang();render();});
 $('#program').onchange=e=>{state.program=e.target.value;render();};
+function closePanel(){$('#progBackdrop').classList.remove('on');$('#progPanel').classList.remove('on');}
+$('#progInfoBtn').onclick=()=>{$('#progBackdrop').classList.add('on');$('#progPanel').classList.add('on');};
+$('#progBackdrop').onclick=closePanel;$('#progPanelClose').onclick=closePanel;
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closePanel();});
 $('#kommun').onchange=e=>{state.kommun=e.target.value;render();const r=filtered().filter(s=>s.lat&&s.lng);if(state.kommun&&r.length)map.fitBounds(L.latLngBounds(r.map(s=>[s.lat,s.lng])).pad(.3));};
 let qt;$('#q').oninput=e=>{clearTimeout(qt);qt=setTimeout(()=>{state.q=e.target.value;render();},120);};
 $$('thead th').forEach(th=>th.onclick=()=>{const k=th.dataset.sort;if(state.sort===k)state.dir=state.dir==='asc'?'desc':'asc';else{state.sort=k;state.dir=(k==='namn'||k==='kommun')?'asc':'desc';}render();});
