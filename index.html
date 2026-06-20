@@ -6,19 +6,9 @@
 <title>Grundskolan åk 9</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
 <style>
-  :root{
-    --paper:#f6f5f1; --panel:#ffffff; --ink:#1b2230; --muted:#5d6675;
-    --hair:#e5e3db; --hair2:#efeee8; --brand:#2f6f5e;
-    --lo:#b14b3f; --mid:#e7c15e; --hi:#2f7d6b; --none:#c7c9c4;
-    --neutral:#ece9df;
-    --shadow:0 1px 2px rgba(20,25,38,.06),0 8px 24px rgba(20,25,38,.06);
-  }
-  *{box-sizing:border-box}
-  html,body{margin:0;height:100%}
-  body{
-    font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Hanken Grotesk","Helvetica Neue",Arial,"PingFang SC","Microsoft YaHei",sans-serif;
-    color:var(--ink);background:var(--paper);-webkit-font-smoothing:antialiased;
-  }
+  :root{--paper:#f6f5f1;--panel:#fff;--ink:#1b2230;--muted:#5d6675;--hair:#e5e3db;--hair2:#efeee8;--brand:#2f6f5e;--lo:#b14b3f;--mid:#e7c15e;--hi:#2f7d6b;--none:#c7c9c4;--shadow:0 1px 2px rgba(20,25,38,.06),0 8px 24px rgba(20,25,38,.06)}
+  *{box-sizing:border-box}html,body{margin:0;height:100%}
+  body{font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Hanken Grotesk","Helvetica Neue",Arial,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink);background:var(--paper);-webkit-font-smoothing:antialiased}
   .tnum{font-variant-numeric:tabular-nums}
   .app{display:flex;flex-direction:column;height:100%}
   header{padding:12px 16px;border-bottom:1px solid var(--hair);background:linear-gradient(180deg,#fbfaf7,#f6f5f1)}
@@ -26,66 +16,74 @@
   .level-nav a{text-decoration:none;color:var(--muted);font-size:13px;font-weight:600;padding:6px 12px;border-radius:8px}
   .level-nav a.on{background:var(--panel);color:var(--ink);box-shadow:var(--shadow)}
   .ttl{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
-  h1{margin:0;font-size:19px;letter-spacing:.2px;font-weight:680}
+  h1{margin:0;font-size:18px;letter-spacing:.2px;font-weight:680}
   .sub{color:var(--muted);font-size:12.5px}
-  .meta{margin-top:2px;color:var(--muted);font-size:12px}
+  .meta{margin-top:4px;color:var(--muted);font-size:12px}
   .sample-flag{display:none;margin-top:6px;font-size:12px;color:#8a5a1b;background:#fdf3df;border:1px solid #f0dcae;border-radius:8px;padding:5px 9px}
-  .sample-flag.on{display:inline-block}
-  .sample-flag code{background:#f3e6c4;padding:1px 4px;border-radius:4px}
-
-  .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}
+  .sample-flag.on{display:inline-block}.sample-flag code{background:#f3e6c4;padding:1px 4px;border-radius:4px}
+  .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px}
   .seg{display:inline-flex;background:#ecebe4;border-radius:10px;padding:3px;gap:2px}
   .seg button{appearance:none;border:0;background:transparent;color:var(--muted);font:inherit;font-size:13px;font-weight:560;padding:7px 12px;border-radius:8px;cursor:pointer;white-space:nowrap;transition:background .15s,color .15s,box-shadow .15s}
   .seg button[aria-pressed="true"]{background:var(--panel);color:var(--ink);box-shadow:var(--shadow)}
   .seg button:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
   .seg.lang button{padding:7px 10px}
   .spacer{flex:1 1 auto}
-  select,.search input{font:inherit;font-size:13px;color:var(--ink);background:var(--panel);border:1px solid var(--hair);border-radius:9px;padding:8px 10px;min-height:38px}
-  .search{position:relative}
-  .search input{padding-left:30px;width:190px;max-width:46vw}
+  select,.search input,.ms-btn{font:inherit;font-size:13px;color:var(--ink);background:var(--panel);border:1px solid var(--hair);border-radius:9px;padding:8px 10px;min-height:38px}
+  .search{position:relative}.search input{padding-left:30px;width:170px;max-width:46vw}
   .search svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);opacity:.5}
-
+  /* multiselect */
+  .ms{position:relative}
+  .ms-btn{cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+  .ms-btn .badge{background:var(--brand);color:#fff;border-radius:999px;font-size:11px;padding:0 6px;min-width:18px;text-align:center}
+  .ms-panel{position:absolute;z-index:1200;top:calc(100% + 6px);right:0;width:260px;max-height:340px;display:none;flex-direction:column;background:var(--panel);border:1px solid var(--hair);border-radius:11px;box-shadow:0 16px 40px rgba(0,0,0,.18)}
+  .ms-panel.on{display:flex}
+  .ms-panel .msf{padding:8px;border-bottom:1px solid var(--hair2);display:flex;gap:6px}
+  .ms-panel .msf input{flex:1;font:inherit;font-size:13px;padding:6px 8px;border:1px solid var(--hair);border-radius:8px}
+  .ms-list{overflow:auto;padding:4px}
+  .ms-list label{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px;font-size:13px;cursor:pointer}
+  .ms-list label:hover{background:#f4f7f5}
+  .ms-foot{display:flex;justify-content:space-between;padding:7px 10px;border-top:1px solid var(--hair2);font-size:12px}
+  .ms-foot button{border:0;background:transparent;color:var(--brand);font:inherit;font-size:12px;cursor:pointer}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .chip{display:inline-flex;align-items:center;gap:6px;background:#eef2f0;border:1px solid #dde6e2;border-radius:999px;padding:3px 6px 3px 10px;font-size:12px}
+  .chip button{border:0;background:transparent;cursor:pointer;color:var(--muted);font-size:14px;line-height:1;padding:0 2px}
   .main{flex:1 1 auto;display:flex;min-height:0}
-  #map{flex:1 1 auto;min-width:0;background:#e9e7df}
-  .leaflet-container{font:inherit}
+  #map{flex:1 1 auto;min-width:0;background:#e9e7df}.leaflet-container{font:inherit}
   aside{width:392px;max-width:42vw;border-left:1px solid var(--hair);background:var(--panel);display:flex;flex-direction:column;min-height:0}
-  .aside-head{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--hair2)}
-  .aside-head b{font-size:13px;font-weight:640}
-  .aside-head .n{color:var(--muted);font-size:12px}
+  .tabs{display:flex;gap:4px;padding:8px 12px 0}
+  .tabs button{appearance:none;border:0;background:transparent;color:var(--muted);font:inherit;font-size:13px;font-weight:600;padding:7px 12px;border-radius:8px 8px 0 0;cursor:pointer;border-bottom:2px solid transparent}
+  .tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--brand)}
+  .aside-head{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;border-bottom:1px solid var(--hair2)}
+  .aside-head b{font-size:13px;font-weight:640}.aside-head .n{color:var(--muted);font-size:12px}
   .legend{display:flex;flex-direction:column;gap:5px;padding:9px 14px;border-bottom:1px solid var(--hair2)}
   .bar{height:9px;border-radius:5px;background:linear-gradient(90deg,var(--lo),var(--mid),var(--hi))}
   .leglabs{display:flex;justify-content:space-between;font-size:11px;color:var(--muted)}
-  .help{font-size:11.5px;color:var(--muted);padding:0 14px 9px;border-bottom:1px solid var(--hair2);display:none}
-
+  .help{font-size:11.5px;line-height:1.45;color:var(--muted);padding:8px 14px 10px;border-bottom:1px solid var(--hair2)}
   .tablewrap{overflow:auto;min-height:0}
   table{width:100%;border-collapse:collapse;font-size:13px}
   thead th{position:sticky;top:0;background:var(--panel);z-index:1;text-align:left;padding:9px 12px;border-bottom:1px solid var(--hair);color:var(--muted);font-weight:600;cursor:pointer;white-space:nowrap;user-select:none}
-  thead th.numcol{text-align:right}
-  thead th .ar{opacity:.4;font-size:10px;margin-left:3px}
+  thead th.numcol{text-align:right}thead th .ar{opacity:.4;font-size:10px;margin-left:3px}
   thead th[aria-sort] .ar{opacity:1;color:var(--ink)}
   tbody td{padding:9px 12px;border-bottom:1px solid var(--hair2);vertical-align:top}
-  tbody td.numcol{text-align:right}
-  tbody tr{cursor:pointer}
-  tbody tr:hover{background:#f4f7f5}
-  tbody tr.active{background:#e8f1ed;box-shadow:inset 3px 0 0 var(--brand)}
-  .skola{font-weight:560}
-  .kom{color:var(--muted);font-size:12px}
+  tbody td.numcol{text-align:right}tbody tr{cursor:pointer}
+  tbody tr:hover{background:#f4f7f5}tbody tr.active{background:#e8f1ed;box-shadow:inset 3px 0 0 var(--brand)}
+  .skola{font-weight:560}.kom{color:var(--muted);font-size:12px}
   .val{display:inline-flex;align-items:center;gap:7px;justify-content:flex-end}
   .dot{width:10px;height:10px;border-radius:50%;flex:none;box-shadow:0 0 0 1px rgba(0,0,0,.08) inset}
-
-  .pop b{display:block;font-size:14px;margin-bottom:2px}
-  .pop .pk{color:var(--muted);font-size:12px;margin-bottom:8px}
+  /* trend */
+  .trend{padding:12px 14px;overflow:auto;min-height:0}
+  .trend .thead{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:8px;flex-wrap:wrap}
+  .trend .thead b{font-size:13px}
+  .trend .seg button{font-size:12px;padding:5px 9px}
+  .trend svg{width:100%;height:auto;display:block}
+  .trend .tlegend{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;font-size:12px;color:var(--ink)}
+  .trend .tlegend i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:5px;vertical-align:middle}
+  .trend .tnote{margin-top:8px;font-size:11.5px;color:var(--muted)}
+  .pop b{display:block;font-size:14px;margin-bottom:2px}.pop .pk{color:var(--muted);font-size:12px;margin-bottom:8px}
   .pop .grid{display:grid;grid-template-columns:auto auto;gap:3px 14px;font-size:12.5px}
-  .pop .grid span:nth-child(odd){color:var(--muted)}
-  .pop .grid span:nth-child(even){text-align:right;font-variant-numeric:tabular-nums}
+  .pop .grid span:nth-child(odd){color:var(--muted)}.pop .grid span:nth-child(even){text-align:right;font-variant-numeric:tabular-nums}
   .empty{padding:26px 16px;color:var(--muted);font-size:13px;text-align:center}
-
-  @media (max-width:820px){
-    .main{flex-direction:column}
-    #map{height:52vh;flex:none}
-    aside{width:auto;max-width:none;border-left:0;border-top:1px solid var(--hair);flex:1 1 auto}
-    .search input{width:150px}
-  }
+  @media (max-width:820px){.main{flex-direction:column}#map{height:48vh;flex:none}aside{width:auto;max-width:none;border-left:0;border-top:1px solid var(--hair);flex:1 1 auto}.search input{width:140px}.ms-panel{right:auto;left:0}}
   @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
 </style>
 </head>
@@ -110,312 +108,329 @@
       </div>
       <div class="spacer"></div>
       <div class="seg lang" id="langSeg" role="group" aria-label="language">
-        <button data-lang="zh">中文</button>
-        <button data-lang="sv">SV</button>
-        <button data-lang="en">EN</button>
+        <button data-lang="zh">中文</button><button data-lang="sv">SV</button><button data-lang="en">EN</button>
       </div>
-      <select id="kommun"><option value=""></option></select>
+      <div class="ms" id="ms">
+        <button class="ms-btn" id="msBtn" type="button"><span id="msBtnLabel"></span><span class="badge" id="msBadge" hidden>0</span> ▾</button>
+        <div class="ms-panel" id="msPanel">
+          <div class="msf"><input id="msSearch" type="search" autocomplete="off" /></div>
+          <div class="ms-list" id="msList"></div>
+          <div class="ms-foot"><button id="msClear"></button><button id="msClose"></button></div>
+        </div>
+      </div>
       <label class="search">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
         <input id="q" type="search" autocomplete="off" />
       </label>
     </div>
+    <div class="chips" id="chips"></div>
   </header>
-
   <div class="main">
     <div id="map"></div>
     <aside>
-      <div class="aside-head"><b id="metricName"></b><span class="n"><span id="shown">0</span> <span id="shownUnit"></span></span></div>
-      <div class="legend">
-        <div class="bar" id="bar"></div>
-        <div class="leglabs"><span id="legLo"></span><span id="legMid"></span><span id="legHi"></span></div>
+      <div class="tabs" role="tablist">
+        <button id="tabRank" role="tab" aria-selected="true"></button>
+        <button id="tabTrend" role="tab" aria-selected="false"></button>
       </div>
-      <div class="help" id="metricHelp"></div>
-      <div class="tablewrap">
-        <table>
-          <thead><tr>
+      <!-- RANK view -->
+      <div id="rankView">
+        <div class="aside-head"><b id="metricName"></b><span class="n"><span id="shown">0</span> <span id="shownUnit"></span></span></div>
+        <div class="legend"><div class="bar" id="bar"></div><div class="leglabs"><span id="legLo"></span><span id="legMid"></span><span id="legHi"></span></div></div>
+        <div class="help" id="metricHelp"></div>
+        <div class="tablewrap">
+          <table><thead><tr>
             <th data-sort="namn"><span class="hl" id="thSchool"></span><span class="ar">▲▼</span></th>
             <th data-sort="kommun"><span class="hl" id="thKommun"></span><span class="ar">▲▼</span></th>
             <th class="numcol" data-sort="metric" aria-sort="descending"><span class="hl" id="thValue"></span><span class="ar">▼</span></th>
-          </tr></thead>
-          <tbody id="tbody"></tbody>
-        </table>
-        <div class="empty" id="empty" hidden></div>
+          </tr></thead><tbody id="tbody"></tbody></table>
+          <div class="empty" id="empty" hidden></div>
+        </div>
+      </div>
+      <!-- TREND view -->
+      <div id="trendView" class="trend" hidden>
+        <div class="thead"><b id="trendTitle"></b>
+          <div class="seg" id="rangeSeg"><button data-range="3"></button><button data-range="5" aria-pressed="true"></button><button data-range="10"></button></div>
+        </div>
+        <div id="trendChart"></div>
+        <div class="tlegend" id="trendLegend"></div>
+        <div class="tnote" id="trendNote"></div>
       </div>
     </aside>
   </div>
 </div>
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
-const SAMPLE = {"generatedAt":"2026-06-19T00:00:00.000Z","source":"EXEMPELDATA (platshållare) – byt mot riktig data via fetch-data.mjs","sample":true,"count":30,"latestPeriod":"2024/25","schools":[{"kod":"00000001","namn":"Hulebäcksgymnasiets grundskola","kommun":"Härryda","ort":"Mölnlycke","huvudman":"Kommunal","lat":57.6592,"lng":12.119,"meritvarde":241,"behorighet":92,"np":14.1,"npSve":14,"npEng":16.2,"npMa":12.1,"andelGodkand":85,"lararbehorighet":78,"elever":210,"period":"2024/25","salsaActual":241,"salsaCalc":235,"salsaDev":6,"salsaReqDev":2,"salsaParents":2.3},{"kod":"00000002","namn":"Önnerödsskolan","kommun":"Härryda","ort":"Mölnlycke","huvudman":"Kommunal","lat":57.665,"lng":12.13,"meritvarde":233.5,"behorighet":89,"np":13.4,"npSve":13.2,"npEng":15.6,"npMa":11.4,"andelGodkand":82,"lararbehorighet":81,"elever":160,"period":"2024/25","salsaActual":234,"salsaCalc":237,"salsaDev":-3,"salsaReqDev":-1,"salsaParents":2.3},{"kod":"00000003","namn":"Landvetterskolan","kommun":"Härryda","ort":"Landvetter","huvudman":"Kommunal","lat":57.696,"lng":12.208,"meritvarde":228,"behorighet":87,"np":13,"npSve":12.8,"npEng":15,"npMa":11.2,"andelGodkand":80,"lararbehorighet":76,"elever":190,"period":"2024/25","salsaActual":228,"salsaCalc":227,"salsaDev":1,"salsaReqDev":0,"salsaParents":2.2},{"kod":"00000004","namn":"Fässbergsskolan","kommun":"Mölndal","ort":"Mölndal","huvudman":"Kommunal","lat":57.654,"lng":12.013,"meritvarde":221,"behorighet":84,"np":12.6,"npSve":12.4,"npEng":14.6,"npMa":10.8,"andelGodkand":77,"lararbehorighet":74,"elever":230,"period":"2024/25","salsaActual":221,"salsaCalc":223,"salsaDev":-2,"salsaReqDev":-1,"salsaParents":2.2},{"kod":"00000005","namn":"Krokslättsskolan","kommun":"Mölndal","ort":"Mölndal","huvudman":"Kommunal","lat":57.672,"lng":12.015,"meritvarde":215.5,"behorighet":81,"np":12.1,"npSve":12,"npEng":14,"npMa":10.3,"andelGodkand":74,"lararbehorighet":70,"elever":180,"period":"2024/25","salsaActual":216,"salsaCalc":222,"salsaDev":-6,"salsaReqDev":-2,"salsaParents":2.1},{"kod":"00000006","namn":"Vättleskolan","kommun":"Partille","ort":"Partille","huvudman":"Kommunal","lat":57.74,"lng":12.106,"meritvarde":219,"behorighet":83,"np":12.4,"npSve":12.2,"npEng":14.3,"npMa":10.7,"andelGodkand":76,"lararbehorighet":72,"elever":210,"period":"2024/25","salsaActual":219,"salsaCalc":217,"salsaDev":2,"salsaReqDev":1,"salsaParents":2.2},{"kod":"00000007","namn":"Lerums gymnasieskola åk 9","kommun":"Lerum","ort":"Lerum","huvudman":"Kommunal","lat":57.77,"lng":12.27,"meritvarde":226,"behorighet":86,"np":12.9,"npSve":12.7,"npEng":14.9,"npMa":11,"andelGodkand":79,"lararbehorighet":75,"elever":200,"period":"2024/25","salsaActual":226,"salsaCalc":222,"salsaDev":4,"salsaReqDev":1,"salsaParents":2.2},{"kod":"00000008","namn":"Hålta skola","kommun":"Kungälv","ort":"Kungälv","huvudman":"Kommunal","lat":57.87,"lng":11.98,"meritvarde":217,"behorighet":82,"np":12.2,"npSve":12.1,"npEng":14.1,"npMa":10.4,"andelGodkand":75,"lararbehorighet":71,"elever":140,"period":"2024/25","salsaActual":217,"salsaCalc":218,"salsaDev":-1,"salsaReqDev":0,"salsaParents":2.1},{"kod":"00000009","namn":"Aranässkolan","kommun":"Kungsbacka","ort":"Kungsbacka","huvudman":"Kommunal","lat":57.487,"lng":12.076,"meritvarde":234,"behorighet":90,"np":13.6,"npSve":13.4,"npEng":15.8,"npMa":11.6,"andelGodkand":83,"lararbehorighet":79,"elever":260,"period":"2024/25","salsaActual":234,"salsaCalc":226,"salsaDev":8,"salsaReqDev":3,"salsaParents":2.3},{"kod":"00000010","namn":"Montessoriskolan Centrum","kommun":"Göteborg","ort":"Göteborg","huvudman":"Fristående","lat":57.701,"lng":11.968,"meritvarde":252,"behorighet":95,"np":15.2,"npSve":15.1,"npEng":17,"npMa":13.5,"andelGodkand":90,"lararbehorighet":68,"elever":120,"period":"2024/25","salsaActual":252,"salsaCalc":264,"salsaDev":-12,"salsaReqDev":-4,"salsaParents":2.4},{"kod":"00000011","namn":"Hvitfeldtska grundskolan","kommun":"Göteborg","ort":"Göteborg","huvudman":"Kommunal","lat":57.702,"lng":11.956,"meritvarde":238,"behorighet":91,"np":14,"npSve":13.9,"npEng":16.1,"npMa":12,"andelGodkand":84,"lararbehorighet":80,"elever":300,"period":"2024/25","salsaActual":238,"salsaCalc":242,"salsaDev":-4,"salsaReqDev":-1,"salsaParents":2.3},{"kod":"00000012","namn":"Bergsjöskolan","kommun":"Göteborg","ort":"Göteborg","huvudman":"Kommunal","lat":57.756,"lng":12.036,"meritvarde":182,"behorighet":62,"np":9.6,"npSve":9.4,"npEng":11,"npMa":8.4,"andelGodkand":55,"lararbehorighet":64,"elever":170,"period":"2024/25","salsaActual":182,"salsaCalc":200,"salsaDev":-18,"salsaReqDev":-6,"salsaParents":1.9},{"kod":"00000013","namn":"Frölundaskolan","kommun":"Göteborg","ort":"Västra Frölunda","huvudman":"Kommunal","lat":57.652,"lng":11.912,"meritvarde":198,"behorighet":72,"np":11,"npSve":10.8,"npEng":12.7,"npMa":9.4,"andelGodkand":66,"lararbehorighet":69,"elever":220,"period":"2024/25","salsaActual":198,"salsaCalc":206,"salsaDev":-8,"salsaReqDev":-3,"salsaParents":2},{"kod":"00000014","namn":"Internationella Engelska Skolan Krokslätt","kommun":"Göteborg","ort":"Göteborg","huvudman":"Fristående","lat":57.684,"lng":12.009,"meritvarde":245,"behorighet":93,"np":14.6,"npSve":14.4,"npEng":17.2,"npMa":12.2,"andelGodkand":88,"lararbehorighet":66,"elever":340,"period":"2024/25","salsaActual":245,"salsaCalc":255,"salsaDev":-10,"salsaReqDev":-3,"salsaParents":2.4},{"kod":"00000015","namn":"Adolf Fredriks musikklasser","kommun":"Stockholm","ort":"Stockholm","huvudman":"Kommunal","lat":59.3373,"lng":18.051,"meritvarde":288.5,"behorighet":96.3,"np":16.7,"npSve":15.9,"npEng":18.5,"npMa":15.7,"andelGodkand":92.6,"lararbehorighet":89.6,"elever":480,"period":"2024/25","salsaActual":289,"salsaCalc":274,"salsaDev":15,"salsaReqDev":5,"salsaParents":2.7},{"kod":"00000016","namn":"Danderyds gymnasiums grundskola","kommun":"Danderyd","ort":"Danderyd","huvudman":"Kommunal","lat":59.402,"lng":18.033,"meritvarde":278,"behorighet":97,"np":16.4,"npSve":16,"npEng":18.2,"npMa":15,"andelGodkand":94,"lararbehorighet":86,"elever":260,"period":"2024/25","salsaActual":278,"salsaCalc":269,"salsaDev":9,"salsaReqDev":3,"salsaParents":2.6},{"kod":"00000017","namn":"Lommaskolan","kommun":"Lomma","ort":"Lomma","huvudman":"Kommunal","lat":55.67,"lng":13.07,"meritvarde":269,"behorighet":96,"np":16,"npSve":15.6,"npEng":17.9,"npMa":14.5,"andelGodkand":93,"lararbehorighet":84,"elever":240,"period":"2024/25","salsaActual":269,"salsaCalc":258,"salsaDev":11,"salsaReqDev":4,"salsaParents":2.6},{"kod":"00000018","namn":"Lidingö Hersby grundskola","kommun":"Lidingö","ort":"Lidingö","huvudman":"Kommunal","lat":59.364,"lng":18.13,"meritvarde":258,"behorighet":95,"np":15.5,"npSve":15.2,"npEng":17.5,"npMa":13.8,"andelGodkand":91,"lararbehorighet":82,"elever":300,"period":"2024/25","salsaActual":258,"salsaCalc":251,"salsaDev":7,"salsaReqDev":2,"salsaParents":2.5},{"kod":"00000019","namn":"Nacka Saltsjöbadens samskola","kommun":"Nacka","ort":"Saltsjöbaden","huvudman":"Fristående","lat":59.282,"lng":18.301,"meritvarde":266,"behorighet":96,"np":15.9,"npSve":15.6,"npEng":17.8,"npMa":14.3,"andelGodkand":92,"lararbehorighet":75,"elever":210,"period":"2024/25","salsaActual":266,"salsaCalc":254,"salsaDev":12,"salsaReqDev":4,"salsaParents":2.5},{"kod":"00000020","namn":"Malmö Latinskolas grundskola","kommun":"Malmö","ort":"Malmö","huvudman":"Kommunal","lat":55.605,"lng":13.003,"meritvarde":211,"behorighet":79,"np":11.9,"npSve":11.6,"npEng":13.9,"npMa":10.1,"andelGodkand":72,"lararbehorighet":73,"elever":280,"period":"2024/25","salsaActual":211,"salsaCalc":218,"salsaDev":-7,"salsaReqDev":-2,"salsaParents":2.1},{"kod":"00000021","namn":"Rosengårdsskolan","kommun":"Malmö","ort":"Malmö","huvudman":"Kommunal","lat":55.593,"lng":13.047,"meritvarde":176,"behorighet":58,"np":9.1,"npSve":8.6,"npEng":10.4,"npMa":8.2,"andelGodkand":52,"lararbehorighet":62,"elever":230,"period":"2024/25","salsaActual":176,"salsaCalc":198,"salsaDev":-22,"salsaReqDev":-7,"salsaParents":1.8},{"kod":"00000022","namn":"Spyken grundskola","kommun":"Lund","ort":"Lund","huvudman":"Kommunal","lat":55.705,"lng":13.193,"meritvarde":249,"behorighet":94,"np":14.9,"npSve":14.7,"npEng":17,"npMa":13,"andelGodkand":89,"lararbehorighet":83,"elever":250,"period":"2024/25","salsaActual":249,"salsaCalc":239,"salsaDev":10,"salsaReqDev":3,"salsaParents":2.4},{"kod":"00000023","namn":"Katedralskolans grundskola","kommun":"Uppsala","ort":"Uppsala","huvudman":"Kommunal","lat":59.859,"lng":17.639,"meritvarde":243,"behorighet":92,"np":14.3,"npSve":14.1,"npEng":16.5,"npMa":12.3,"andelGodkand":86,"lararbehorighet":81,"elever":270,"period":"2024/25","salsaActual":243,"salsaCalc":238,"salsaDev":5,"salsaReqDev":2,"salsaParents":2.4},{"kod":"00000024","namn":"Tunaskolan","kommun":"Linköping","ort":"Linköping","huvudman":"Kommunal","lat":58.41,"lng":15.621,"meritvarde":224,"behorighet":85,"np":12.8,"npSve":12.6,"npEng":14.8,"npMa":11,"andelGodkand":78,"lararbehorighet":77,"elever":300,"period":"2024/25","salsaActual":224,"salsaCalc":221,"salsaDev":3,"salsaReqDev":1,"salsaParents":2.2},{"kod":"00000025","namn":"Rosenlundsskolan","kommun":"Jönköping","ort":"Jönköping","huvudman":"Kommunal","lat":57.779,"lng":14.161,"meritvarde":220,"behorighet":84,"np":12.5,"npSve":12.3,"npEng":14.5,"npMa":10.7,"andelGodkand":77,"lararbehorighet":76,"elever":210,"period":"2024/25","salsaActual":220,"salsaCalc":222,"salsaDev":-2,"salsaReqDev":-1,"salsaParents":2.2},{"kod":"00000026","namn":"Karolinerskolan","kommun":"Helsingborg","ort":"Helsingborg","huvudman":"Kommunal","lat":56.05,"lng":12.694,"meritvarde":208,"behorighet":78,"np":11.7,"npSve":11.5,"npEng":13.6,"npMa":10,"andelGodkand":71,"lararbehorighet":72,"elever":230,"period":"2024/25","salsaActual":208,"salsaCalc":213,"salsaDev":-5,"salsaReqDev":-2,"salsaParents":2.1},{"kod":"00000027","namn":"Mariebergsskolan","kommun":"Örebro","ort":"Örebro","huvudman":"Kommunal","lat":59.27,"lng":15.21,"meritvarde":214,"behorighet":81,"np":12,"npSve":11.8,"npEng":13.8,"npMa":10.3,"andelGodkand":74,"lararbehorighet":74,"elever":260,"period":"2024/25","salsaActual":214,"salsaCalc":217,"salsaDev":-3,"salsaReqDev":-1,"salsaParents":2.1},{"kod":"00000028","namn":"Mariedalsskolan","kommun":"Umeå","ort":"Umeå","huvudman":"Kommunal","lat":63.826,"lng":20.263,"meritvarde":230,"behorighet":88,"np":13.2,"npSve":13,"npEng":15.3,"npMa":11.3,"andelGodkand":81,"lararbehorighet":80,"elever":240,"period":"2024/25","salsaActual":230,"salsaCalc":224,"salsaDev":6,"salsaReqDev":2,"salsaParents":2.3},{"kod":"00000029","namn":"Östra skolan","kommun":"Luleå","ort":"Luleå","huvudman":"Kommunal","lat":65.584,"lng":22.155,"meritvarde":223,"behorighet":85,"np":12.7,"npSve":12.5,"npEng":14.7,"npMa":10.9,"andelGodkand":78,"lararbehorighet":78,"elever":190,"period":"2024/25","salsaActual":223,"salsaCalc":219,"salsaDev":4,"salsaReqDev":1,"salsaParents":2.2},{"kod":"00000030","namn":"Högalidskolan","kommun":"Kiruna","ort":"Kiruna","huvudman":"Kommunal","lat":67.849,"lng":20.224,"meritvarde":205,"behorighet":77,"np":11.5,"npSve":11.3,"npEng":13.4,"npMa":9.8,"andelGodkand":70,"lararbehorighet":71,"elever":150,"period":"2024/25","salsaActual":205,"salsaCalc":214,"salsaDev":-9,"salsaReqDev":-3,"salsaParents":2}],"salsaPeriod":"2024/25"};
+const SAMPLE = {"generatedAt":"2026-06-19T00:00:00.000Z","source":"EXEMPELDATA (platshållare) – byt mot riktig data via fetch-data.mjs","sample":true,"count":30,"latestPeriod":"2024/25","schools":[{"kod":"00000001","namn":"Hulebäcksgymnasiets grundskola","kommun":"Härryda","ort":"Mölnlycke","huvudman":"Kommunal","lat":57.6592,"lng":12.119,"meritvarde":241,"behorighet":92,"np":14.1,"npSve":14,"npEng":16.2,"npMa":12.1,"andelGodkand":85,"lararbehorighet":78,"elever":210,"period":"2024/25","salsaActual":241,"salsaCalc":235,"salsaDev":6,"salsaReqDev":2,"salsaParents":2.3,"series":{"meritvarde":{"2019/20":227,"2020/21":231,"2021/22":232,"2022/23":234,"2023/24":239,"2024/25":241},"behorighet":{"2019/20":85,"2020/21":87,"2021/22":88,"2022/23":88,"2023/24":91,"2024/25":92},"np":{"2019/20":13,"2020/21":13.4,"2021/22":13.4,"2022/23":13.5,"2023/24":13.9,"2024/25":14.1}}},{"kod":"00000002","namn":"Önnerödsskolan","kommun":"Härryda","ort":"Mölnlycke","huvudman":"Kommunal","lat":57.665,"lng":12.13,"meritvarde":233.5,"behorighet":89,"np":13.4,"npSve":13.2,"npEng":15.6,"npMa":11.4,"andelGodkand":82,"lararbehorighet":81,"elever":160,"period":"2024/25","salsaActual":234,"salsaCalc":237,"salsaDev":-3,"salsaReqDev":-1,"salsaParents":2.3,"series":{"meritvarde":{"2019/20":220,"2020/21":224,"2021/22":225,"2022/23":226,"2023/24":232,"2024/25":234},"behorighet":{"2019/20":82,"2020/21":84,"2021/22":85,"2022/23":85,"2023/24":88,"2024/25":89},"np":{"2019/20":12.3,"2020/21":12.7,"2021/22":12.7,"2022/23":12.8,"2023/24":13.2,"2024/25":13.4}}},{"kod":"00000003","namn":"Landvetterskolan","kommun":"Härryda","ort":"Landvetter","huvudman":"Kommunal","lat":57.696,"lng":12.208,"meritvarde":228,"behorighet":87,"np":13,"npSve":12.8,"npEng":15,"npMa":11.2,"andelGodkand":80,"lararbehorighet":76,"elever":190,"period":"2024/25","salsaActual":228,"salsaCalc":227,"salsaDev":1,"salsaReqDev":0,"salsaParents":2.2,"series":{"meritvarde":{"2019/20":214,"2020/21":218,"2021/22":219,"2022/23":221,"2023/24":226,"2024/25":228},"behorighet":{"2019/20":80,"2020/21":82,"2021/22":83,"2022/23":83,"2023/24":86,"2024/25":87},"np":{"2019/20":11.9,"2020/21":12.3,"2021/22":12.3,"2022/23":12.4,"2023/24":12.8,"2024/25":13}}},{"kod":"00000004","namn":"Fässbergsskolan","kommun":"Mölndal","ort":"Mölndal","huvudman":"Kommunal","lat":57.654,"lng":12.013,"meritvarde":221,"behorighet":84,"np":12.6,"npSve":12.4,"npEng":14.6,"npMa":10.8,"andelGodkand":77,"lararbehorighet":74,"elever":230,"period":"2024/25","salsaActual":221,"salsaCalc":223,"salsaDev":-2,"salsaReqDev":-1,"salsaParents":2.2,"series":{"meritvarde":{"2019/20":207,"2020/21":211,"2021/22":212,"2022/23":214,"2023/24":219,"2024/25":221},"behorighet":{"2019/20":77,"2020/21":79,"2021/22":80,"2022/23":80,"2023/24":83,"2024/25":84},"np":{"2019/20":11.5,"2020/21":11.9,"2021/22":11.9,"2022/23":12,"2023/24":12.4,"2024/25":12.6}}},{"kod":"00000005","namn":"Krokslättsskolan","kommun":"Mölndal","ort":"Mölndal","huvudman":"Kommunal","lat":57.672,"lng":12.015,"meritvarde":215.5,"behorighet":81,"np":12.1,"npSve":12,"npEng":14,"npMa":10.3,"andelGodkand":74,"lararbehorighet":70,"elever":180,"period":"2024/25","salsaActual":216,"salsaCalc":222,"salsaDev":-6,"salsaReqDev":-2,"salsaParents":2.1,"series":{"meritvarde":{"2019/20":202,"2020/21":206,"2021/22":207,"2022/23":208,"2023/24":214,"2024/25":216},"behorighet":{"2019/20":74,"2020/21":76,"2021/22":77,"2022/23":77,"2023/24":80,"2024/25":81},"np":{"2019/20":11,"2020/21":11.4,"2021/22":11.4,"2022/23":11.5,"2023/24":11.9,"2024/25":12.1}}},{"kod":"00000006","namn":"Vättleskolan","kommun":"Partille","ort":"Partille","huvudman":"Kommunal","lat":57.74,"lng":12.106,"meritvarde":219,"behorighet":83,"np":12.4,"npSve":12.2,"npEng":14.3,"npMa":10.7,"andelGodkand":76,"lararbehorighet":72,"elever":210,"period":"2024/25","salsaActual":219,"salsaCalc":217,"salsaDev":2,"salsaReqDev":1,"salsaParents":2.2,"series":{"meritvarde":{"2019/20":205,"2020/21":209,"2021/22":210,"2022/23":212,"2023/24":217,"2024/25":219},"behorighet":{"2019/20":76,"2020/21":78,"2021/22":79,"2022/23":79,"2023/24":82,"2024/25":83},"np":{"2019/20":11.3,"2020/21":11.7,"2021/22":11.7,"2022/23":11.8,"2023/24":12.2,"2024/25":12.4}}},{"kod":"00000007","namn":"Lerums gymnasieskola åk 9","kommun":"Lerum","ort":"Lerum","huvudman":"Kommunal","lat":57.77,"lng":12.27,"meritvarde":226,"behorighet":86,"np":12.9,"npSve":12.7,"npEng":14.9,"npMa":11,"andelGodkand":79,"lararbehorighet":75,"elever":200,"period":"2024/25","salsaActual":226,"salsaCalc":222,"salsaDev":4,"salsaReqDev":1,"salsaParents":2.2,"series":{"meritvarde":{"2019/20":212,"2020/21":216,"2021/22":217,"2022/23":219,"2023/24":224,"2024/25":226},"behorighet":{"2019/20":79,"2020/21":81,"2021/22":82,"2022/23":82,"2023/24":85,"2024/25":86},"np":{"2019/20":11.8,"2020/21":12.2,"2021/22":12.2,"2022/23":12.3,"2023/24":12.7,"2024/25":12.9}}},{"kod":"00000008","namn":"Hålta skola","kommun":"Kungälv","ort":"Kungälv","huvudman":"Kommunal","lat":57.87,"lng":11.98,"meritvarde":217,"behorighet":82,"np":12.2,"npSve":12.1,"npEng":14.1,"npMa":10.4,"andelGodkand":75,"lararbehorighet":71,"elever":140,"period":"2024/25","salsaActual":217,"salsaCalc":218,"salsaDev":-1,"salsaReqDev":0,"salsaParents":2.1,"series":{"meritvarde":{"2019/20":203,"2020/21":207,"2021/22":208,"2022/23":210,"2023/24":215,"2024/25":217},"behorighet":{"2019/20":75,"2020/21":77,"2021/22":78,"2022/23":78,"2023/24":81,"2024/25":82},"np":{"2019/20":11.1,"2020/21":11.5,"2021/22":11.5,"2022/23":11.6,"2023/24":12,"2024/25":12.2}}},{"kod":"00000009","namn":"Aranässkolan","kommun":"Kungsbacka","ort":"Kungsbacka","huvudman":"Kommunal","lat":57.487,"lng":12.076,"meritvarde":234,"behorighet":90,"np":13.6,"npSve":13.4,"npEng":15.8,"npMa":11.6,"andelGodkand":83,"lararbehorighet":79,"elever":260,"period":"2024/25","salsaActual":234,"salsaCalc":226,"salsaDev":8,"salsaReqDev":3,"salsaParents":2.3,"series":{"meritvarde":{"2019/20":220,"2020/21":224,"2021/22":225,"2022/23":227,"2023/24":232,"2024/25":234},"behorighet":{"2019/20":83,"2020/21":85,"2021/22":86,"2022/23":86,"2023/24":89,"2024/25":90},"np":{"2019/20":12.5,"2020/21":12.9,"2021/22":12.9,"2022/23":13,"2023/24":13.4,"2024/25":13.6}}},{"kod":"00000010","namn":"Montessoriskolan Centrum","kommun":"Göteborg","ort":"Göteborg","huvudman":"Fristående","lat":57.701,"lng":11.968,"meritvarde":252,"behorighet":95,"np":15.2,"npSve":15.1,"npEng":17,"npMa":13.5,"andelGodkand":90,"lararbehorighet":68,"elever":120,"period":"2024/25","salsaActual":252,"salsaCalc":264,"salsaDev":-12,"salsaReqDev":-4,"salsaParents":2.4,"series":{"meritvarde":{"2019/20":238,"2020/21":242,"2021/22":243,"2022/23":245,"2023/24":250,"2024/25":252},"behorighet":{"2019/20":88,"2020/21":90,"2021/22":91,"2022/23":91,"2023/24":94,"2024/25":95},"np":{"2019/20":14.1,"2020/21":14.5,"2021/22":14.5,"2022/23":14.6,"2023/24":15,"2024/25":15.2}}},{"kod":"00000011","namn":"Hvitfeldtska grundskolan","kommun":"Göteborg","ort":"Göteborg","huvudman":"Kommunal","lat":57.702,"lng":11.956,"meritvarde":238,"behorighet":91,"np":14,"npSve":13.9,"npEng":16.1,"npMa":12,"andelGodkand":84,"lararbehorighet":80,"elever":300,"period":"2024/25","salsaActual":238,"salsaCalc":242,"salsaDev":-4,"salsaReqDev":-1,"salsaParents":2.3,"series":{"meritvarde":{"2019/20":224,"2020/21":228,"2021/22":229,"2022/23":231,"2023/24":236,"2024/25":238},"behorighet":{"2019/20":84,"2020/21":86,"2021/22":87,"2022/23":87,"2023/24":90,"2024/25":91},"np":{"2019/20":12.9,"2020/21":13.3,"2021/22":13.3,"2022/23":13.4,"2023/24":13.8,"2024/25":14}}},{"kod":"00000012","namn":"Bergsjöskolan","kommun":"Göteborg","ort":"Göteborg","huvudman":"Kommunal","lat":57.756,"lng":12.036,"meritvarde":182,"behorighet":62,"np":9.6,"npSve":9.4,"npEng":11,"npMa":8.4,"andelGodkand":55,"lararbehorighet":64,"elever":170,"period":"2024/25","salsaActual":182,"salsaCalc":200,"salsaDev":-18,"salsaReqDev":-6,"salsaParents":1.9,"series":{"meritvarde":{"2019/20":168,"2020/21":172,"2021/22":173,"2022/23":175,"2023/24":180,"2024/25":182},"behorighet":{"2019/20":55,"2020/21":57,"2021/22":58,"2022/23":58,"2023/24":61,"2024/25":62},"np":{"2019/20":8.5,"2020/21":8.9,"2021/22":8.9,"2022/23":9,"2023/24":9.4,"2024/25":9.6}}},{"kod":"00000013","namn":"Frölundaskolan","kommun":"Göteborg","ort":"Västra Frölunda","huvudman":"Kommunal","lat":57.652,"lng":11.912,"meritvarde":198,"behorighet":72,"np":11,"npSve":10.8,"npEng":12.7,"npMa":9.4,"andelGodkand":66,"lararbehorighet":69,"elever":220,"period":"2024/25","salsaActual":198,"salsaCalc":206,"salsaDev":-8,"salsaReqDev":-3,"salsaParents":2,"series":{"meritvarde":{"2019/20":184,"2020/21":188,"2021/22":189,"2022/23":191,"2023/24":196,"2024/25":198},"behorighet":{"2019/20":65,"2020/21":67,"2021/22":68,"2022/23":68,"2023/24":71,"2024/25":72},"np":{"2019/20":9.9,"2020/21":10.3,"2021/22":10.3,"2022/23":10.4,"2023/24":10.8,"2024/25":11}}},{"kod":"00000014","namn":"Internationella Engelska Skolan Krokslätt","kommun":"Göteborg","ort":"Göteborg","huvudman":"Fristående","lat":57.684,"lng":12.009,"meritvarde":245,"behorighet":93,"np":14.6,"npSve":14.4,"npEng":17.2,"npMa":12.2,"andelGodkand":88,"lararbehorighet":66,"elever":340,"period":"2024/25","salsaActual":245,"salsaCalc":255,"salsaDev":-10,"salsaReqDev":-3,"salsaParents":2.4,"series":{"meritvarde":{"2019/20":231,"2020/21":235,"2021/22":236,"2022/23":238,"2023/24":243,"2024/25":245},"behorighet":{"2019/20":86,"2020/21":88,"2021/22":89,"2022/23":89,"2023/24":92,"2024/25":93},"np":{"2019/20":13.5,"2020/21":13.9,"2021/22":13.9,"2022/23":14,"2023/24":14.4,"2024/25":14.6}}},{"kod":"00000015","namn":"Adolf Fredriks musikklasser","kommun":"Stockholm","ort":"Stockholm","huvudman":"Kommunal","lat":59.3373,"lng":18.051,"meritvarde":288.5,"behorighet":96.3,"np":16.7,"npSve":15.9,"npEng":18.5,"npMa":15.7,"andelGodkand":92.6,"lararbehorighet":89.6,"elever":480,"period":"2024/25","salsaActual":289,"salsaCalc":274,"salsaDev":15,"salsaReqDev":5,"salsaParents":2.7,"series":{"meritvarde":{"2019/20":275,"2020/21":279,"2021/22":280,"2022/23":281,"2023/24":287,"2024/25":289},"behorighet":{"2019/20":89,"2020/21":92,"2021/22":92,"2022/23":93,"2023/24":95,"2024/25":96},"np":{"2019/20":15.6,"2020/21":16,"2021/22":16,"2022/23":16.1,"2023/24":16.5,"2024/25":16.7}}},{"kod":"00000016","namn":"Danderyds gymnasiums grundskola","kommun":"Danderyd","ort":"Danderyd","huvudman":"Kommunal","lat":59.402,"lng":18.033,"meritvarde":278,"behorighet":97,"np":16.4,"npSve":16,"npEng":18.2,"npMa":15,"andelGodkand":94,"lararbehorighet":86,"elever":260,"period":"2024/25","salsaActual":278,"salsaCalc":269,"salsaDev":9,"salsaReqDev":3,"salsaParents":2.6,"series":{"meritvarde":{"2019/20":264,"2020/21":268,"2021/22":269,"2022/23":271,"2023/24":276,"2024/25":278},"behorighet":{"2019/20":90,"2020/21":92,"2021/22":93,"2022/23":93,"2023/24":96,"2024/25":97},"np":{"2019/20":15.3,"2020/21":15.7,"2021/22":15.7,"2022/23":15.8,"2023/24":16.2,"2024/25":16.4}}},{"kod":"00000017","namn":"Lommaskolan","kommun":"Lomma","ort":"Lomma","huvudman":"Kommunal","lat":55.67,"lng":13.07,"meritvarde":269,"behorighet":96,"np":16,"npSve":15.6,"npEng":17.9,"npMa":14.5,"andelGodkand":93,"lararbehorighet":84,"elever":240,"period":"2024/25","salsaActual":269,"salsaCalc":258,"salsaDev":11,"salsaReqDev":4,"salsaParents":2.6,"series":{"meritvarde":{"2019/20":255,"2020/21":259,"2021/22":260,"2022/23":262,"2023/24":267,"2024/25":269},"behorighet":{"2019/20":89,"2020/21":91,"2021/22":92,"2022/23":92,"2023/24":95,"2024/25":96},"np":{"2019/20":14.9,"2020/21":15.3,"2021/22":15.3,"2022/23":15.4,"2023/24":15.8,"2024/25":16}}},{"kod":"00000018","namn":"Lidingö Hersby grundskola","kommun":"Lidingö","ort":"Lidingö","huvudman":"Kommunal","lat":59.364,"lng":18.13,"meritvarde":258,"behorighet":95,"np":15.5,"npSve":15.2,"npEng":17.5,"npMa":13.8,"andelGodkand":91,"lararbehorighet":82,"elever":300,"period":"2024/25","salsaActual":258,"salsaCalc":251,"salsaDev":7,"salsaReqDev":2,"salsaParents":2.5,"series":{"meritvarde":{"2019/20":244,"2020/21":248,"2021/22":249,"2022/23":251,"2023/24":256,"2024/25":258},"behorighet":{"2019/20":88,"2020/21":90,"2021/22":91,"2022/23":91,"2023/24":94,"2024/25":95},"np":{"2019/20":14.4,"2020/21":14.8,"2021/22":14.8,"2022/23":14.9,"2023/24":15.3,"2024/25":15.5}}},{"kod":"00000019","namn":"Nacka Saltsjöbadens samskola","kommun":"Nacka","ort":"Saltsjöbaden","huvudman":"Fristående","lat":59.282,"lng":18.301,"meritvarde":266,"behorighet":96,"np":15.9,"npSve":15.6,"npEng":17.8,"npMa":14.3,"andelGodkand":92,"lararbehorighet":75,"elever":210,"period":"2024/25","salsaActual":266,"salsaCalc":254,"salsaDev":12,"salsaReqDev":4,"salsaParents":2.5,"series":{"meritvarde":{"2019/20":252,"2020/21":256,"2021/22":257,"2022/23":259,"2023/24":264,"2024/25":266},"behorighet":{"2019/20":89,"2020/21":91,"2021/22":92,"2022/23":92,"2023/24":95,"2024/25":96},"np":{"2019/20":14.8,"2020/21":15.2,"2021/22":15.2,"2022/23":15.3,"2023/24":15.7,"2024/25":15.9}}},{"kod":"00000020","namn":"Malmö Latinskolas grundskola","kommun":"Malmö","ort":"Malmö","huvudman":"Kommunal","lat":55.605,"lng":13.003,"meritvarde":211,"behorighet":79,"np":11.9,"npSve":11.6,"npEng":13.9,"npMa":10.1,"andelGodkand":72,"lararbehorighet":73,"elever":280,"period":"2024/25","salsaActual":211,"salsaCalc":218,"salsaDev":-7,"salsaReqDev":-2,"salsaParents":2.1,"series":{"meritvarde":{"2019/20":197,"2020/21":201,"2021/22":202,"2022/23":204,"2023/24":209,"2024/25":211},"behorighet":{"2019/20":72,"2020/21":74,"2021/22":75,"2022/23":75,"2023/24":78,"2024/25":79},"np":{"2019/20":10.8,"2020/21":11.2,"2021/22":11.2,"2022/23":11.3,"2023/24":11.7,"2024/25":11.9}}},{"kod":"00000021","namn":"Rosengårdsskolan","kommun":"Malmö","ort":"Malmö","huvudman":"Kommunal","lat":55.593,"lng":13.047,"meritvarde":176,"behorighet":58,"np":9.1,"npSve":8.6,"npEng":10.4,"npMa":8.2,"andelGodkand":52,"lararbehorighet":62,"elever":230,"period":"2024/25","salsaActual":176,"salsaCalc":198,"salsaDev":-22,"salsaReqDev":-7,"salsaParents":1.8,"series":{"meritvarde":{"2019/20":162,"2020/21":166,"2021/22":167,"2022/23":169,"2023/24":174,"2024/25":176},"behorighet":{"2019/20":51,"2020/21":53,"2021/22":54,"2022/23":54,"2023/24":57,"2024/25":58},"np":{"2019/20":8,"2020/21":8.4,"2021/22":8.4,"2022/23":8.5,"2023/24":8.9,"2024/25":9.1}}},{"kod":"00000022","namn":"Spyken grundskola","kommun":"Lund","ort":"Lund","huvudman":"Kommunal","lat":55.705,"lng":13.193,"meritvarde":249,"behorighet":94,"np":14.9,"npSve":14.7,"npEng":17,"npMa":13,"andelGodkand":89,"lararbehorighet":83,"elever":250,"period":"2024/25","salsaActual":249,"salsaCalc":239,"salsaDev":10,"salsaReqDev":3,"salsaParents":2.4,"series":{"meritvarde":{"2019/20":235,"2020/21":239,"2021/22":240,"2022/23":242,"2023/24":247,"2024/25":249},"behorighet":{"2019/20":87,"2020/21":89,"2021/22":90,"2022/23":90,"2023/24":93,"2024/25":94},"np":{"2019/20":13.8,"2020/21":14.2,"2021/22":14.2,"2022/23":14.3,"2023/24":14.7,"2024/25":14.9}}},{"kod":"00000023","namn":"Katedralskolans grundskola","kommun":"Uppsala","ort":"Uppsala","huvudman":"Kommunal","lat":59.859,"lng":17.639,"meritvarde":243,"behorighet":92,"np":14.3,"npSve":14.1,"npEng":16.5,"npMa":12.3,"andelGodkand":86,"lararbehorighet":81,"elever":270,"period":"2024/25","salsaActual":243,"salsaCalc":238,"salsaDev":5,"salsaReqDev":2,"salsaParents":2.4,"series":{"meritvarde":{"2019/20":229,"2020/21":233,"2021/22":234,"2022/23":236,"2023/24":241,"2024/25":243},"behorighet":{"2019/20":85,"2020/21":87,"2021/22":88,"2022/23":88,"2023/24":91,"2024/25":92},"np":{"2019/20":13.2,"2020/21":13.6,"2021/22":13.6,"2022/23":13.7,"2023/24":14.1,"2024/25":14.3}}},{"kod":"00000024","namn":"Tunaskolan","kommun":"Linköping","ort":"Linköping","huvudman":"Kommunal","lat":58.41,"lng":15.621,"meritvarde":224,"behorighet":85,"np":12.8,"npSve":12.6,"npEng":14.8,"npMa":11,"andelGodkand":78,"lararbehorighet":77,"elever":300,"period":"2024/25","salsaActual":224,"salsaCalc":221,"salsaDev":3,"salsaReqDev":1,"salsaParents":2.2,"series":{"meritvarde":{"2019/20":210,"2020/21":214,"2021/22":215,"2022/23":217,"2023/24":222,"2024/25":224},"behorighet":{"2019/20":78,"2020/21":80,"2021/22":81,"2022/23":81,"2023/24":84,"2024/25":85},"np":{"2019/20":11.7,"2020/21":12.1,"2021/22":12.1,"2022/23":12.2,"2023/24":12.6,"2024/25":12.8}}},{"kod":"00000025","namn":"Rosenlundsskolan","kommun":"Jönköping","ort":"Jönköping","huvudman":"Kommunal","lat":57.779,"lng":14.161,"meritvarde":220,"behorighet":84,"np":12.5,"npSve":12.3,"npEng":14.5,"npMa":10.7,"andelGodkand":77,"lararbehorighet":76,"elever":210,"period":"2024/25","salsaActual":220,"salsaCalc":222,"salsaDev":-2,"salsaReqDev":-1,"salsaParents":2.2,"series":{"meritvarde":{"2019/20":206,"2020/21":210,"2021/22":211,"2022/23":213,"2023/24":218,"2024/25":220},"behorighet":{"2019/20":77,"2020/21":79,"2021/22":80,"2022/23":80,"2023/24":83,"2024/25":84},"np":{"2019/20":11.4,"2020/21":11.8,"2021/22":11.8,"2022/23":11.9,"2023/24":12.3,"2024/25":12.5}}},{"kod":"00000026","namn":"Karolinerskolan","kommun":"Helsingborg","ort":"Helsingborg","huvudman":"Kommunal","lat":56.05,"lng":12.694,"meritvarde":208,"behorighet":78,"np":11.7,"npSve":11.5,"npEng":13.6,"npMa":10,"andelGodkand":71,"lararbehorighet":72,"elever":230,"period":"2024/25","salsaActual":208,"salsaCalc":213,"salsaDev":-5,"salsaReqDev":-2,"salsaParents":2.1,"series":{"meritvarde":{"2019/20":194,"2020/21":198,"2021/22":199,"2022/23":201,"2023/24":206,"2024/25":208},"behorighet":{"2019/20":71,"2020/21":73,"2021/22":74,"2022/23":74,"2023/24":77,"2024/25":78},"np":{"2019/20":10.6,"2020/21":11,"2021/22":11,"2022/23":11.1,"2023/24":11.5,"2024/25":11.7}}},{"kod":"00000027","namn":"Mariebergsskolan","kommun":"Örebro","ort":"Örebro","huvudman":"Kommunal","lat":59.27,"lng":15.21,"meritvarde":214,"behorighet":81,"np":12,"npSve":11.8,"npEng":13.8,"npMa":10.3,"andelGodkand":74,"lararbehorighet":74,"elever":260,"period":"2024/25","salsaActual":214,"salsaCalc":217,"salsaDev":-3,"salsaReqDev":-1,"salsaParents":2.1,"series":{"meritvarde":{"2019/20":200,"2020/21":204,"2021/22":205,"2022/23":207,"2023/24":212,"2024/25":214},"behorighet":{"2019/20":74,"2020/21":76,"2021/22":77,"2022/23":77,"2023/24":80,"2024/25":81},"np":{"2019/20":10.9,"2020/21":11.3,"2021/22":11.3,"2022/23":11.4,"2023/24":11.8,"2024/25":12}}},{"kod":"00000028","namn":"Mariedalsskolan","kommun":"Umeå","ort":"Umeå","huvudman":"Kommunal","lat":63.826,"lng":20.263,"meritvarde":230,"behorighet":88,"np":13.2,"npSve":13,"npEng":15.3,"npMa":11.3,"andelGodkand":81,"lararbehorighet":80,"elever":240,"period":"2024/25","salsaActual":230,"salsaCalc":224,"salsaDev":6,"salsaReqDev":2,"salsaParents":2.3,"series":{"meritvarde":{"2019/20":216,"2020/21":220,"2021/22":221,"2022/23":223,"2023/24":228,"2024/25":230},"behorighet":{"2019/20":81,"2020/21":83,"2021/22":84,"2022/23":84,"2023/24":87,"2024/25":88},"np":{"2019/20":12.1,"2020/21":12.5,"2021/22":12.5,"2022/23":12.6,"2023/24":13,"2024/25":13.2}}},{"kod":"00000029","namn":"Östra skolan","kommun":"Luleå","ort":"Luleå","huvudman":"Kommunal","lat":65.584,"lng":22.155,"meritvarde":223,"behorighet":85,"np":12.7,"npSve":12.5,"npEng":14.7,"npMa":10.9,"andelGodkand":78,"lararbehorighet":78,"elever":190,"period":"2024/25","salsaActual":223,"salsaCalc":219,"salsaDev":4,"salsaReqDev":1,"salsaParents":2.2,"series":{"meritvarde":{"2019/20":209,"2020/21":213,"2021/22":214,"2022/23":216,"2023/24":221,"2024/25":223},"behorighet":{"2019/20":78,"2020/21":80,"2021/22":81,"2022/23":81,"2023/24":84,"2024/25":85},"np":{"2019/20":11.6,"2020/21":12,"2021/22":12,"2022/23":12.1,"2023/24":12.5,"2024/25":12.7}}},{"kod":"00000030","namn":"Högalidskolan","kommun":"Kiruna","ort":"Kiruna","huvudman":"Kommunal","lat":67.849,"lng":20.224,"meritvarde":205,"behorighet":77,"np":11.5,"npSve":11.3,"npEng":13.4,"npMa":9.8,"andelGodkand":70,"lararbehorighet":71,"elever":150,"period":"2024/25","salsaActual":205,"salsaCalc":214,"salsaDev":-9,"salsaReqDev":-3,"salsaParents":2,"series":{"meritvarde":{"2019/20":191,"2020/21":195,"2021/22":196,"2022/23":198,"2023/24":203,"2024/25":205},"behorighet":{"2019/20":70,"2020/21":72,"2021/22":73,"2022/23":73,"2023/24":76,"2024/25":77},"np":{"2019/20":10.4,"2020/21":10.8,"2021/22":10.8,"2022/23":10.9,"2023/24":11.3,"2024/25":11.5}}}],"salsaPeriod":"2024/25"};
 
-/* ---------- i18n ---------- */
-const I18N = {
-  zh:{
-    title:'瑞典初中9年级成绩地图', subtitle:'Grundskolan årskurs 9 · 来源 Skolverket',
+const I18N={
+  zh:{title:'瑞典初中9年级成绩地图',subtitle:'Grundskolan åk 9 · 来源 Skolverket',
     sample:'⚠ 当前是<b>示例数据</b>（30 所占位）。运行 <code>node fetch-data.mjs</code> 生成真实 data.json 后刷新即可。',
-    all:'全部', kommunal:'公立', fristaende:'私立',
-    allKommun:'所有 kommun', searchPh:'搜索学校…',
-    unit:'所', colSchool:'学校 / 排名', colKommun:'Kommun', colValue:'数值', empty:'没有符合条件的学校。',
-    metaTpl:(c,p,sp,s)=>`${c} 所学校 · 成绩 <b>${p||'—'}</b>${sp?` · SALSA ${sp}`:''} · 来源 ${s}`,
-    pupils:n=>`${n} 名学生`,
+    all:'全部',kommunal:'公立',fristaende:'私立',searchPh:'搜索学校…',
+    msLabel:'区域',msSearchPh:'筛选 kommun…',msClear:'清除',msClose:'完成',
+    unit:'所',colSchool:'学校 / 排名',colKommun:'Kommun',colValue:'数值',empty:'没有符合条件的学校。',
+    metaTpl:(c,p,sp,s)=>`${c} 所学校 · 成绩 <b>${p||'—'}</b>${sp?` · SALSA ${sp}`:''} · 来源 ${s}`,pupils:n=>`${n} 名学生`,
     huvudLabel:{Kommunal:'公立',['Fristående']:'私立'},
     metricNames:{meritvarde:'平均绩点 (meritvärde)',behorighet:'升学资格% (behörig YR)',np:'全国统考均分 (NP åk 9)',salsa:'SALSA 增值偏差'},
     metricShort:{meritvarde:['平均绩点','meritvärde'],behorighet:['升学资格%','behörig'],np:['全国统考','NP'],salsa:['SALSA','偏差']},
-    salsaHelp:'实际成绩 − 按家庭背景预测值。正＝高于预期（绿），负＝低于预期（红）。这能减少生源差异的影响。',
-    pop:{merit:'平均绩点 meritvärde',beh:'升学资格 behörig%',np:'全国统考 NP 均分',sve:'· 瑞典语 SVE',eng:'· 英语 ENG',ma:'· 数学 MA',passed:'全科及格%',teacher:'教师资格%',salsaDev:'SALSA 偏差',salsaActual:'实际 meritvärde',salsaCalc:'预测 meritvärde',parents:'家长教育指数'},
-  },
-  sv:{
-    title:'Betygskarta – grundskolan åk 9', subtitle:'Källa: Skolverket',
-    sample:'⚠ Detta är <b>exempeldata</b> (30 platshållare). Kör <code>node fetch-data.mjs</code> för riktig data.json och ladda om.',
-    all:'Alla', kommunal:'Kommunal', fristaende:'Fristående',
-    allKommun:'Alla kommuner', searchPh:'Sök skola…',
-    unit:'skolor', colSchool:'Skola / placering', colKommun:'Kommun', colValue:'Värde', empty:'Inga skolor matchar filtret.',
-    metaTpl:(c,p,sp,s)=>`${c} skolor · betyg <b>${p||'—'}</b>${sp?` · SALSA ${sp}`:''} · källa ${s}`,
-    pupils:n=>`${n} elever`,
+    tabRank:'排行榜',tabTrend:'趋势图',
+    trSchool:'',trNational:'全国平均',trKommunSuffix:'（区域均）',
+    trTitleNational:'全国平均趋势',trTitleSchool:'学校趋势',trTitleKommun:'区域对比',
+    trSalsa:'SALSA 没有历年数据，这里显示平均绩点（meritvärde）的趋势。',
+    trHint:'点地图圆点或表格某行看单校趋势；多选区域可对比多个 kommun。',pop:{merit:'平均绩点 meritvärde',beh:'升学资格 behörig%',np:'全国统考 NP 均分',sve:'· 瑞典语 SVE',eng:'· 英语 ENG',ma:'· 数学 MA',passed:'全科及格%',teacher:'教师资格%',salsaDev:'SALSA 偏差',salsaActual:'实际 meritvärde',salsaCalc:'预测 meritvärde'}},
+  sv:{title:'Betygskarta – grundskolan åk 9',subtitle:'Källa: Skolverket',
+    sample:'⚠ Detta är <b>exempeldata</b> (30 platshållare). Kör <code>node fetch-data.mjs</code> för riktig data.json.',
+    all:'Alla',kommunal:'Kommunal',fristaende:'Fristående',searchPh:'Sök skola…',
+    msLabel:'Kommuner',msSearchPh:'Filtrera kommun…',msClear:'Rensa',msClose:'Klar',
+    unit:'skolor',colSchool:'Skola / placering',colKommun:'Kommun',colValue:'Värde',empty:'Inga skolor matchar filtret.',
+    metaTpl:(c,p,sp,s)=>`${c} skolor · betyg <b>${p||'—'}</b>${sp?` · SALSA ${sp}`:''} · källa ${s}`,pupils:n=>`${n} elever`,
     huvudLabel:{Kommunal:'Kommunal',['Fristående']:'Fristående'},
     metricNames:{meritvarde:'Genomsnittligt meritvärde',behorighet:'Behörighet yrkesprogram %',np:'Nationella prov åk 9 (snitt)',salsa:'SALSA-avvikelse'},
     metricShort:{meritvarde:['Meritvärde','snitt'],behorighet:['Behörig%','YR'],np:['Nat. prov','NP'],salsa:['SALSA','avvikelse']},
-    salsaHelp:'Faktiskt resultat − förväntat utifrån elevernas bakgrund. Plus = över förväntan (grön), minus = under (röd). Jämnare jämförelse mellan skolor.',
-    pop:{merit:'Meritvärde',beh:'Behörig% (YR)',np:'Nationella prov (snitt)',sve:'· Svenska SVE',eng:'· Engelska ENG',ma:'· Matematik MA',passed:'Godkänt i alla ämnen %',teacher:'Behöriga lärare %',salsaDev:'SALSA-avvikelse',salsaActual:'Faktiskt meritvärde',salsaCalc:'Förväntat meritvärde',parents:'Föräldrars utbildning'},
-  },
-  en:{
-    title:'Sweden grade-9 results map', subtitle:'Compulsory school year 9 · source: Skolverket',
+    tabRank:'Ranking',tabTrend:'Trend',
+    trSchool:'',trNational:'Riksgenomsnitt',trKommunSuffix:' (kommunsnitt)',
+    trTitleNational:'Trend – riksgenomsnitt',trTitleSchool:'Trend – skola',trTitleKommun:'Jämför kommuner',
+    trSalsa:'SALSA saknar tidsserie; visar trend för meritvärde i stället.',
+    trHint:'Klicka en prick eller tabellrad för en skolas trend; välj flera kommuner för att jämföra.',pop:{merit:'Meritvärde',beh:'Behörig% (YR)',np:'Nationella prov (snitt)',sve:'· Svenska SVE',eng:'· Engelska ENG',ma:'· Matematik MA',passed:'Godkänt i alla ämnen %',teacher:'Behöriga lärare %',salsaDev:'SALSA-avvikelse',salsaActual:'Faktiskt meritvärde',salsaCalc:'Förväntat meritvärde'}},
+  en:{title:'Sweden grade-9 results map',subtitle:'Compulsory school year 9 · source: Skolverket',
     sample:'⚠ This is <b>sample data</b> (30 placeholders). Run <code>node fetch-data.mjs</code> to build the real data.json, then reload.',
-    all:'All', kommunal:'Public', fristaende:'Independent',
-    allKommun:'All municipalities', searchPh:'Search school…',
-    unit:'schools', colSchool:'School / rank', colKommun:'Municipality', colValue:'Value', empty:'No schools match the filter.',
-    metaTpl:(c,p,sp,s)=>`${c} schools · grades <b>${p||'—'}</b>${sp?` · SALSA ${sp}`:''} · source ${s}`,
-    pupils:n=>`${n} pupils`,
+    all:'All',kommunal:'Public',fristaende:'Independent',searchPh:'Search school…',
+    msLabel:'Regions',msSearchPh:'Filter municipality…',msClear:'Clear',msClose:'Done',
+    unit:'schools',colSchool:'School / rank',colKommun:'Municipality',colValue:'Value',empty:'No schools match the filter.',
+    metaTpl:(c,p,sp,s)=>`${c} schools · grades <b>${p||'—'}</b>${sp?` · SALSA ${sp}`:''} · source ${s}`,pupils:n=>`${n} pupils`,
     huvudLabel:{Kommunal:'Public',['Fristående']:'Independent'},
     metricNames:{meritvarde:'Average merit value (meritvärde)',behorighet:'Eligibility for upper sec. %',np:'National tests yr 9 (avg)',salsa:'SALSA value-added deviation'},
     metricShort:{meritvarde:['Merit','meritvärde'],behorighet:['Eligible%','behörig'],np:['Nat. tests','NP'],salsa:['SALSA','deviation']},
-    salsaHelp:'Actual result − expected from pupils’ background. Positive = above expectation (green), negative = below (red). A fairer cross-school comparison.',
-    pop:{merit:'Merit value',beh:'Eligibility % (vocational)',np:'National tests (avg)',sve:'· Swedish SVE',eng:'· English ENG',ma:'· Maths MA',passed:'Passed all subjects %',teacher:'Certified teachers %',salsaDev:'SALSA deviation',salsaActual:'Actual merit value',salsaCalc:'Expected merit value',parents:'Parental education index'},
-  },
-};
-
-const METRICS = {
-  meritvarde:{field:'meritvarde', dom:[170,300], unit:'', dec:0},
-  behorighet:{field:'behorighet', dom:[55,100], unit:'%', dec:0},
-  np:        {field:'np',         dom:[9,18],  unit:'', dec:1},
-  salsa:     {field:'salsaDev',   dom:[-30,30],unit:'', dec:0, diverging:true},
+    tabRank:'Ranking',tabTrend:'Trend',
+    trSchool:'',trNational:'National average',trKommunSuffix:' (municipality avg)',
+    trTitleNational:'Trend – national average',trTitleSchool:'Trend – school',trTitleKommun:'Compare municipalities',
+    trSalsa:'SALSA has no time series; showing the merit-value trend instead.',
+    trHint:'Tap a dot or table row for a school trend; pick several regions to compare municipalities.',pop:{merit:'Merit value',beh:'Eligibility % (vocational)',np:'National tests (avg)',sve:'· Swedish SVE',eng:'· English ENG',ma:'· Maths MA',passed:'Passed all subjects %',teacher:'Certified teachers %',salsaDev:'SALSA deviation',salsaActual:'Actual merit value',salsaCalc:'Expected merit value'}},
 };
 const HELP={
-  zh:{
-    meritvarde:'平均绩点 (meritvärde)：9年级最好的16门科目成绩之和（修现代语言则17门），满分340。E=10、C=15、A=20。它决定能报考哪些高中。高分既可能反映教学，也可能反映生源。',
+  zh:{meritvarde:'平均绩点 (meritvärde)：9年级最好的16门科目成绩之和（修现代语言则17门），满分340。E=10、C=15、A=20。它决定能报考哪些高中。高分既可能反映教学，也可能反映生源。',
     behorighet:'升学资格% (behörig)：达到报考高中职业项目资格的学生比例——需瑞典语/英语/数学及格，再加另外5门科目。',
     np:'全国统考均分：9年级瑞典语、英语、数学三科全国统考的平均分（每科0–20）。全国统一命题、集中评分，受本地打分宽严影响较小。',
-    salsa:'SALSA 增值偏差：学校实际平均绩点 − 按学生家庭背景（家长教育、性别比、新移民比例）预测的绩点。正（绿）＝高于预期、负（红）＝低于预期。能较大程度剔除生源差异，更接近"学校自身的贡献"。SALSA 学年通常比成绩晚一年。'
-  },
-  sv:{
-    meritvarde:'Meritvärde: summan av de 16 bästa ämnesbetygen i åk 9 (17 med moderna språk), max 340. E=10, C=15, A=20. Avgör vilka gymnasieprogram eleven kan söka. Ett högt värde kan spegla både undervisning och elevunderlag.',
-    behorighet:'Behörighet %: andel elever som blivit behöriga till ett yrkesprogram – godkänt i svenska/engelska/matematik plus ytterligare fem ämnen.',
-    np:'Nationella prov: snitt av proven i svenska, engelska och matematik i åk 9 (0–20 per ämne). Centralt utformade, mindre påverkade av lokal betygssättning.',
-    salsa:'SALSA-avvikelse: skolans faktiska meritvärde minus det modellen förväntar utifrån elevernas bakgrund (föräldrars utbildning, könsfördelning, andel nyinvandrade). Plus (grön) = över förväntan, minus (röd) = under. Renodlar skolans eget bidrag bättre än råa betyg. SALSA-läsåret ligger ofta ett år efter betygen.'
-  },
-  en:{
-    meritvarde:'Merit value (meritvärde): sum of the 16 best year-9 subject grades (17 with a modern language), max 340. E=10, C=15, A=20. It decides which upper-secondary programs a pupil can apply to. A high value can reflect teaching and/or intake.',
-    behorighet:'Eligibility %: share of pupils qualified for a vocational upper-secondary program — a pass in Swedish/English/Maths plus five more subjects.',
-    np:'National tests: average of the year-9 tests in Swedish, English and Maths (0–20 each). Centrally set and marked, so less affected by local grading.',
-    salsa:'SALSA deviation: the school\u2019s actual merit value minus what a model predicts from pupils\u2019 background (parental education, sex ratio, share newly immigrated). Positive (green) = above expectation, negative (red) = below. Isolates the school\u2019s own contribution better than raw grades. The SALSA year usually lags the grades by one year.'
-  }
+    salsa:'SALSA 增值偏差：学校实际平均绩点 − 按学生家庭背景预测的绩点。正（绿）＝高于预期、负（红）＝低于预期。能较大程度剔除生源差异。SALSA 学年通常比成绩晚一年。'},
+  sv:{meritvarde:'Meritvärde: summan av de 16 bästa ämnesbetygen i åk 9 (17 med moderna språk), max 340. E=10, C=15, A=20. Avgör vilka gymnasieprogram eleven kan söka.',
+    behorighet:'Behörighet %: andel elever behöriga till ett yrkesprogram – godkänt i svenska/engelska/matematik plus fem ämnen till.',
+    np:'Nationella prov: snitt av proven i svenska, engelska och matematik i åk 9 (0–20 per ämne). Centralt utformade.',
+    salsa:'SALSA-avvikelse: faktiskt meritvärde minus modellens förväntade utifrån elevernas bakgrund. Plus (grön) = över förväntan, minus (röd) = under.'},
+  en:{meritvarde:'Merit value: sum of the 16 best year-9 subject grades (17 with a modern language), max 340. E=10, C=15, A=20. Decides which upper-secondary programs a pupil can apply to.',
+    behorighet:'Eligibility %: share of pupils qualified for a vocational upper-secondary program — pass in Swedish/English/Maths plus five more subjects.',
+    np:'National tests: average of the year-9 tests in Swedish, English and Maths (0–20 each). Centrally set and marked.',
+    salsa:'SALSA deviation: actual merit value minus what a model predicts from pupils\u2019 background. Positive (green) = above expectation, negative (red) = below.'},
 };
+const METRICS={meritvarde:{field:'meritvarde',dom:[170,300],unit:'',dec:0},behorighet:{field:'behorighet',dom:[55,100],unit:'%',dec:0},np:{field:'np',dom:[9,18],unit:'',dec:1},salsa:{field:'salsaDev',dom:[-30,30],unit:'',dec:0,diverging:true}};
+const TREND_METRICS={meritvarde:1,behorighet:1,np:1}; // salsa saknar serie
+const LINE_COLORS=['#2f6f5e','#b14b3f','#3b6ea5','#c98a1b','#7a5ea7','#3f8f5a'];
 
-let lang = 'zh';
-try{ const s=localStorage.getItem('skolkarta_lang'); if(s&&I18N[s]) lang=s;
-     else { const n=(navigator.language||'').slice(0,2); if(I18N[n]) lang=n; } }catch(e){}
-
-let state = {metric:'meritvarde', huvud:'', kommun:'', q:'', sort:'metric', dir:'desc'};
-let DATA=[], META={}, markers=new Map(), map, layer, active=null;
-
-const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
+let lang='zh';
+try{const s=localStorage.getItem('skolkarta_lang');if(s&&I18N[s])lang=s;else{const n=(navigator.language||'').slice(0,2);if(I18N[n])lang=n;}}catch(e){}
+let state={metric:'meritvarde',huvud:'',kommuner:[],q:'',sort:'metric',dir:'desc',tab:'rank',range:5};
+let DATA=[],META={},markers=new Map(),map,layer,active=null;
+const $=s=>document.querySelector(s),$$=s=>document.querySelectorAll(s);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
-/* ---------- color ---------- */
-const SEQ=[[177,75,63],[231,193,94],[47,125,107]];   // lo,mid,hi
-const NEU=[236,233,223];
-function color(metricKey,v){
-  if(v==null||isNaN(v)) return getCSS('--none');
-  const M=METRICS[metricKey];
-  if(M.diverging){
-    const D=M.dom[1]; let t=Math.max(-1,Math.min(1,v/D));
-    const b=t<0?SEQ[0]:SEQ[2], k=Math.abs(t);
-    const c=NEU.map((x,i)=>Math.round(x+(b[i]-x)*k));
-    return `rgb(${c[0]},${c[1]},${c[2]})`;
-  }
-  const [lo,hi]=M.dom; let t=Math.max(0,Math.min(1,(v-lo)/(hi-lo)));
-  const seg=t<.5?0:1, lt=t<.5?t/.5:(t-.5)/.5;
-  const c=SEQ[seg].map((x,i)=>Math.round(x+(SEQ[seg+1][i]-x)*lt));
-  return `rgb(${c[0]},${c[1]},${c[2]})`;
-}
+const SEQ=[[177,75,63],[231,193,94],[47,125,107]],NEU=[236,233,223];
+function color(mk,v){if(v==null||isNaN(v))return getCSS('--none');const M=METRICS[mk];
+  if(M.diverging){const D=M.dom[1];let t=Math.max(-1,Math.min(1,v/D));const b=t<0?SEQ[0]:SEQ[2],k=Math.abs(t);const c=NEU.map((x,i)=>Math.round(x+(b[i]-x)*k));return `rgb(${c[0]},${c[1]},${c[2]})`;}
+  const[lo,hi]=M.dom;let t=Math.max(0,Math.min(1,(v-lo)/(hi-lo)));const seg=t<.5?0:1,lt=t<.5?t/.5:(t-.5)/.5;const c=SEQ[seg].map((x,i)=>Math.round(x+(SEQ[seg+1][i]-x)*lt));return `rgb(${c[0]},${c[1]},${c[2]})`;}
 const getCSS=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
-function fmt(v,metricKey){
-  if(v==null||isNaN(v)) return '—';
-  const M=METRICS[metricKey], s=v.toFixed(M.dec)+M.unit;
-  return (M.diverging && v>0) ? '+'+s : s;
-}
+function fmt(v,mk){if(v==null||isNaN(v))return '—';const M=METRICS[mk],s=v.toFixed(M.dec)+M.unit;return (M.diverging&&v>0)?'+'+s:s;}
 
-/* ---------- load ---------- */
 async function load(){
   let d=null;
-  try{ const r=await fetch('./data.json',{cache:'no-store'}); if(r.ok) d=await r.json(); }catch(e){}
-  if(!d||!d.schools||!d.schools.length) d=SAMPLE;
-  DATA=d.schools; META=d;
-  const isSample=d.sample||(d.source&&/EXEMPEL/i.test(d.source));
-  if(isSample) $('#sampleFlag').classList.add('on');
-  initMap(); buildKommunOptions();
-  applyLang(); render();
+  try{const r=await fetch('./data.json',{cache:'no-store'});if(r.ok)d=await r.json();}catch(e){}
+  if(!d||!d.schools||!d.schools.length)d=SAMPLE;
+  DATA=d.schools;META=d;
+  if(d.sample||(d.source&&/EXEMPEL/i.test(d.source)))$('#sampleFlag').classList.add('on');
+  initMap();buildKommunList();applyLang();render();
 }
-function initMap(){
-  map=L.map('map',{preferCanvas:true}).setView([62.0,15.0],4);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-    {attribution:'© OpenStreetMap, © CARTO',subdomains:'abcd',maxZoom:19}).addTo(map);
-  layer=L.layerGroup().addTo(map);
+function initMap(){map=L.map('map',{preferCanvas:true}).setView([62,15],4);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{attribution:'© OpenStreetMap, © CARTO',subdomains:'abcd',maxZoom:19}).addTo(map);
+  layer=L.layerGroup().addTo(map);}
+
+let KOMS=[];
+function buildKommunList(){KOMS=[...new Set(DATA.map(s=>s.kommun).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'sv'));renderMsList('');}
+function renderMsList(filter){
+  const f=filter.trim().toLowerCase();const list=$('#msList');list.innerHTML='';
+  for(const k of KOMS){
+    if(f&&!k.toLowerCase().includes(f))continue;
+    const id='k_'+k.replace(/\W/g,'_');
+    const lab=document.createElement('label');
+    lab.innerHTML=`<input type="checkbox" ${state.kommuner.includes(k)?'checked':''}><span>${esc(k)}</span>`;
+    lab.querySelector('input').onchange=e=>{
+      if(e.target.checked){if(!state.kommuner.includes(k))state.kommuner.push(k);}
+      else state.kommuner=state.kommuner.filter(x=>x!==k);
+      syncKommun();
+    };
+    list.appendChild(lab);
+  }
 }
-function buildKommunOptions(){
-  const sel=$('#kommun'), koms=[...new Set(DATA.map(s=>s.kommun).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'sv'));
-  for(const k of koms){const o=document.createElement('option');o.value=k;o.textContent=k;sel.appendChild(o);}
+function syncKommun(){
+  const t=I18N[lang],b=$('#msBadge');
+  b.hidden=state.kommuner.length===0;b.textContent=state.kommuner.length;
+  const chips=$('#chips');chips.innerHTML='';
+  state.kommuner.forEach(k=>{
+    const c=document.createElement('span');c.className='chip';
+    c.innerHTML=`${esc(k)} <button aria-label="remove">×</button>`;
+    c.querySelector('button').onclick=()=>{state.kommuner=state.kommuner.filter(x=>x!==k);renderMsList($('#msSearch').value);syncKommun();};
+    chips.appendChild(c);
+  });
+  render();
+  const rows=filtered().filter(s=>s.lat&&s.lng);
+  if(state.kommuner.length&&rows.length)map.fitBounds(L.latLngBounds(rows.map(s=>[s.lat,s.lng])).pad(.3));
 }
 
-/* ---------- language ---------- */
 function applyLang(){
-  const t=I18N[lang]; document.documentElement.lang=lang; document.title=t.title;
+  const t=I18N[lang];document.documentElement.lang=lang;document.title=t.title;
   $('#navGr').textContent={zh:'小学',sv:'Grundskola',en:'Compulsory'}[lang];
   $('#navGy').textContent={zh:'高中',sv:'Gymnasiet',en:'Upper sec.'}[lang];
-  $('#h1').textContent=t.title; $('#subtitle').textContent=t.subtitle;
-  $('#sampleFlag').innerHTML=t.sample;
+  $('#h1').textContent=t.title;$('#subtitle').textContent=t.subtitle;$('#sampleFlag').innerHTML=t.sample;
   $$('#metricSeg [data-metric]').forEach(b=>{const[a,s]=t.metricShort[b.dataset.metric];b.innerHTML=`${a} <span class="sub">${s}</span>`;});
   $$('#huvudSeg [data-huvud]').forEach(b=>{b.textContent=b.dataset.huvud===''?t.all:(b.dataset.huvud==='Kommunal'?t.kommunal:t.fristaende);});
   $$('#langSeg [data-lang]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.lang===lang));
-  $('#kommun').options[0].textContent=t.allKommun;
-  $('#q').placeholder=t.searchPh;
-  $('#shownUnit').textContent=t.unit;
-  $('#thSchool').textContent=t.colSchool; $('#thKommun').textContent=t.colKommun; $('#thValue').textContent=t.colValue;
+  $('#msBtnLabel').textContent=t.msLabel;$('#msSearch').placeholder=t.msSearchPh;$('#msClear').textContent=t.msClear;$('#msClose').textContent=t.msClose;
+  $('#q').placeholder=t.searchPh;$('#shownUnit').textContent=t.unit;
+  $('#thSchool').textContent=t.colSchool;$('#thKommun').textContent=t.colKommun;$('#thValue').textContent=t.colValue;
   $('#empty').textContent=t.empty;
-  $('#meta').innerHTML=t.metaTpl(META.count||DATA.length, META.latestPeriod, META.salsaPeriod,
-    (META.source||'').replace(/EXEMPEL.*/i,'sample'));
+  $('#tabRank').textContent=t.tabRank;$('#tabTrend').textContent=t.tabTrend;
+  $$('#rangeSeg [data-range]').forEach(b=>b.textContent=b.dataset.range+(lang==='zh'?'年':lang==='sv'?' år':'y'));
+  $('#meta').innerHTML=t.metaTpl(META.count||DATA.length,META.latestPeriod,META.salsaPeriod,(META.source||'').replace(/EXEMPEL.*/i,'sample'));
 }
 
-/* ---------- filter + sort ---------- */
 function filtered(){
   const q=state.q.trim().toLowerCase();
   return DATA.filter(s=>{
-    if(state.huvud && s.huvudman!==state.huvud) return false;
-    if(state.kommun && s.kommun!==state.kommun) return false;
-    if(q && !(`${s.namn} ${s.kommun} ${s.ort||''}`.toLowerCase().includes(q))) return false;
+    if(state.huvud&&s.huvudman!==state.huvud)return false;
+    if(state.kommuner.length&&!state.kommuner.includes(s.kommun))return false;
+    if(q&&!(`${s.namn} ${s.kommun} ${s.ort||''}`.toLowerCase().includes(q)))return false;
     return true;
   });
 }
 function sortRows(rows){
-  const key = state.sort==='metric' ? METRICS[state.metric].field : state.sort;
-  const isStr = typeof (rows.find(r=>r[key]!=null)?.[key]) === 'string';
-  const arr=rows.slice().sort((a,b)=>{
-    let x=a[key], y=b[key]; const xn=(x==null||x===''), yn=(y==null||y==='');
-    if(xn&&yn)return 0; if(xn)return 1; if(yn)return -1;
-    return isStr ? String(x).localeCompare(String(y),'sv') : x-y;
-  });
-  if(state.dir==='desc') arr.reverse();
-  if(!isStr){ const has=arr.filter(r=>r[key]!=null&&r[key]!==''), no=arr.filter(r=>r[key]==null||r[key]===''); return [...has,...no]; }
+  const key=state.sort==='metric'?METRICS[state.metric].field:state.sort;
+  const isStr=typeof(rows.find(r=>r[key]!=null)?.[key])==='string';
+  const arr=rows.slice().sort((a,b)=>{let x=a[key],y=b[key];const xn=(x==null||x===''),yn=(y==null||y==='');if(xn&&yn)return 0;if(xn)return 1;if(yn)return -1;return isStr?String(x).localeCompare(String(y),'sv'):x-y;});
+  if(state.dir==='desc')arr.reverse();
+  if(!isStr){const has=arr.filter(r=>r[key]!=null&&r[key]!=='' ),no=arr.filter(r=>r[key]==null||r[key]==='');return [...has,...no];}
   return arr;
 }
+function setLegend(){const m=state.metric,M=METRICS[m];
+  if(M.diverging){$('#bar').style.background='linear-gradient(90deg, rgb(177,75,63), rgb(236,233,223), rgb(47,125,107))';$('#legLo').textContent=M.dom[0];$('#legMid').textContent='0';$('#legHi').textContent='+'+M.dom[1];$('#legMid').style.display='';}
+  else{$('#bar').style.background='linear-gradient(90deg,var(--lo),var(--mid),var(--hi))';$('#legLo').textContent=M.dom[0]+M.unit;$('#legHi').textContent=M.dom[1]+M.unit;$('#legMid').style.display='none';}
+  $('#metricHelp').innerHTML=HELP[lang][m];}
 
-/* ---------- render ---------- */
-function setLegend(){
-  const m=state.metric, M=METRICS[m], t=I18N[lang];
-  if(M.diverging){
-    $('#bar').style.background='linear-gradient(90deg, rgb(177,75,63), rgb(236,233,223), rgb(47,125,107))';
-    $('#legLo').textContent=M.dom[0]; $('#legMid').textContent='0'; $('#legHi').textContent='+'+M.dom[1];
-    $('#legMid').style.display='';
-  }else{
-    $('#bar').style.background='linear-gradient(90deg,var(--lo),var(--mid),var(--hi))';
-    $('#legLo').textContent=M.dom[0]+M.unit; $('#legHi').textContent=M.dom[1]+M.unit; $('#legMid').style.display='none';
-  }
-  const help=$('#metricHelp');
-  help.innerHTML=HELP[lang][m]; help.style.display='block';
-}
 function render(){
-  const m=state.metric, M=METRICS[m], f=M.field, t=I18N[lang];
-  $('#metricName').textContent=t.metricNames[m];
-  setLegend();
-  const rows=filtered(); $('#shown').textContent=rows.length;
-
-  layer.clearLayers(); markers.clear();
+  const m=state.metric,M=METRICS[m],f=M.field,t=I18N[lang];
+  $('#metricName').textContent=t.metricNames[m];setLegend();
+  const rows=filtered();$('#shown').textContent=rows.length;
+  layer.clearLayers();markers.clear();
   for(const s of rows.filter(s=>s.lat&&s.lng)){
-    const mk=L.circleMarker([s.lat,s.lng],{radius:6,color:'#fff',weight:1.1,fillColor:color(m,s[f]),fillOpacity:.92})
-      .bindPopup(popup(s),{maxWidth:270});
-    mk.on('click',()=>setActive(s.kod,false)); mk.addTo(layer); markers.set(s.kod,mk);
+    const mk=L.circleMarker([s.lat,s.lng],{radius:6,color:'#fff',weight:1.1,fillColor:color(m,s[f]),fillOpacity:.92}).bindPopup(popup(s),{maxWidth:270});
+    mk.on('click',()=>setActive(s.kod,false));mk.addTo(layer);markers.set(s.kod,mk);
   }
-
-  const sorted=sortRows(rows), rank=state.sort==='metric'&&state.dir==='desc';
-  const tb=$('#tbody'); tb.innerHTML='';
-  sorted.forEach((s,i)=>{
-    const v=s[f], tr=document.createElement('tr'); tr.dataset.kod=s.kod;
-    tr.innerHTML=
-      `<td><span class="skola">${rank?`<span class="kom">${i+1}.</span> `:''}${esc(s.namn)}</span>`+
-      `<div class="kom">${s.huvudman?(t.huvudLabel[s.huvudman]||s.huvudman):''}${s.elever?` · ${t.pupils(s.elever)}`:''}</div></td>`+
-      `<td class="kom">${esc(s.kommun||'—')}</td>`+
-      `<td class="numcol"><span class="val tnum">${fmt(v,m)}<span class="dot" style="background:${color(m,v)}"></span></span></td>`;
-    tr.addEventListener('click',()=>setActive(s.kod,true)); tb.appendChild(tr);
-  });
+  const sorted=sortRows(rows),rank=state.sort==='metric'&&state.dir==='desc';
+  const tb=$('#tbody');tb.innerHTML='';
+  sorted.forEach((s,i)=>{const v=s[f],tr=document.createElement('tr');tr.dataset.kod=s.kod;
+    tr.innerHTML=`<td><span class="skola">${rank?`<span class="kom">${i+1}.</span> `:''}${esc(s.namn)}</span><div class="kom">${s.huvudman?(t.huvudLabel[s.huvudman]||s.huvudman):''}${s.elever?` · ${t.pupils(s.elever)}`:''}</div></td><td class="kom">${esc(s.kommun||'—')}</td><td class="numcol"><span class="val tnum">${fmt(v,m)}<span class="dot" style="background:${color(m,v)}"></span></span></td>`;
+    tr.addEventListener('click',()=>setActive(s.kod,true));tb.appendChild(tr);});
   $('#empty').hidden=sorted.length>0;
-  if(active&&!markers.has(active)) active=null;
+  if(active&&!markers.has(active))active=null;
   updateSortHeaders();
+  if(state.tab==='trend')renderTrend();
 }
-function popup(s){
-  const t=I18N[lang].pop, g=(l,v,k)=>`<span>${l}</span><span>${fmt(v,k)}</span>`;
+function popup(s){const t=I18N[lang].pop,g=(l,v,k)=>`<span>${l}</span><span>${fmt(v,k)}</span>`;
   return `<div class="pop"><b>${esc(s.namn)}</b><div class="pk">${esc(s.kommun||'')}${s.huvudman?' · '+(I18N[lang].huvudLabel[s.huvudman]||s.huvudman):''}${s.period?' · '+s.period:''}</div><div class="grid">`+
     g(t.merit,s.meritvarde,'meritvarde')+g(t.beh,s.behorighet,'behorighet')+g(t.np,s.np,'np')+
-    (s.npSve!=null?`<span>${t.sve}</span><span>${fmt(s.npSve,'np')}</span>`:'')+
-    (s.npEng!=null?`<span>${t.eng}</span><span>${fmt(s.npEng,'np')}</span>`:'')+
-    (s.npMa!=null?`<span>${t.ma}</span><span>${fmt(s.npMa,'np')}</span>`:'')+
     (s.salsaDev!=null?g(t.salsaDev,s.salsaDev,'salsa'):'')+
-    (s.salsaActual!=null?`<span>${t.salsaActual}</span><span>${s.salsaActual}</span>`:'')+
-    (s.salsaCalc!=null?`<span>${t.salsaCalc}</span><span>${s.salsaCalc}</span>`:'')+
     (s.andelGodkand!=null?`<span>${t.passed}</span><span>${fmt(s.andelGodkand,'behorighet')}</span>`:'')+
-    (s.lararbehorighet!=null?`<span>${t.teacher}</span><span>${fmt(s.lararbehorighet,'behorighet')}</span>`:'')+
-    `</div></div>`;
-}
-function setActive(kod,fly){
-  active=kod;
+    (s.lararbehorighet!=null?`<span>${t.teacher}</span><span>${fmt(s.lararbehorighet,'behorighet')}</span>`:'')+`</div></div>`;}
+function setActive(kod,fly){active=kod;
   $$('#tbody tr').forEach(tr=>{const on=tr.dataset.kod===kod;tr.classList.toggle('active',on);if(on)tr.scrollIntoView({block:'nearest'});});
-  const mk=markers.get(kod); if(mk){ if(fly)map.flyTo(mk.getLatLng(),Math.max(map.getZoom(),9),{duration:.6}); mk.openPopup(); }
+  const mk=markers.get(kod);if(mk){if(fly)map.flyTo(mk.getLatLng(),Math.max(map.getZoom(),9),{duration:.6});mk.openPopup();}
+  if(state.tab==='trend')renderTrend();}
+function updateSortHeaders(){$$('thead th').forEach(th=>{if(th.dataset.sort===state.sort){th.setAttribute('aria-sort',state.dir==='asc'?'ascending':'descending');th.querySelector('.ar').textContent=state.dir==='asc'?'▲':'▼';}else{th.removeAttribute('aria-sort');th.querySelector('.ar').textContent='▲▼';}});}
+
+/* ---------- TREND ---------- */
+function allPeriods(metric){const set=new Set();for(const s of DATA){const ser=s.series&&s.series[metric];if(ser)for(const p in ser)set.add(p);}return [...set].sort();}
+function avgSeries(schools,metric){const out={};const periods=allPeriods(metric);
+  for(const p of periods){let n=0,sum=0;for(const s of schools){const v=s.series&&s.series[metric]&&s.series[metric][p];if(v!=null){n++;sum+=v;}}if(n)out[p]=sum/n;}return out;}
+function lastN(periods,n){return periods.slice(Math.max(0,periods.length-n));}
+function shortP(p){const a=p.split('/');return a.length===2?a[0].slice(2)+'/'+a[1]:p;}
+
+function renderTrend(){
+  const t=I18N[lang];let metric=state.metric;
+  let salsaNote='';
+  if(!TREND_METRICS[metric]){salsaNote=t.trSalsa;metric='meritvarde';}
+  const M=METRICS[metric];
+  const periodsAll=allPeriods(metric);const periods=lastN(periodsAll,state.range);
+  const series=[];
+  const activeSchool=active?DATA.find(s=>s.kod===active):null;
+  let title;
+  if(activeSchool){
+    title=t.trTitleSchool;
+    const ss=activeSchool.series&&activeSchool.series[metric]||{};
+    series.push({label:activeSchool.namn,color:'#1b2230',width:2.4,pts:periods.map(p=>({p,v:ss[p]}))});
+    const komAvg=avgSeries(DATA.filter(s=>s.kommun===activeSchool.kommun),metric);
+    series.push({label:activeSchool.kommun+t.trKommunSuffix,color:'#2f6f5e',pts:periods.map(p=>({p,v:komAvg[p]}))});
+  } else if(state.kommuner.length){
+    title=t.trTitleKommun;
+    state.kommuner.slice(0,6).forEach((k,i)=>{const a=avgSeries(DATA.filter(s=>s.kommun===k),metric);series.push({label:k,color:LINE_COLORS[i%LINE_COLORS.length],pts:periods.map(p=>({p,v:a[p]}))});});
+  } else {
+    title=t.trTitleNational;
+  }
+  const nat=avgSeries(DATA,metric);
+  series.push({label:t.trNational,color:'#8a8f99',dash:true,pts:periods.map(p=>({p,v:nat[p]}))});
+  $('#trendTitle').textContent=t.metricNames[metric].split(' (')[0]+' · '+title;
+  drawTrend(periods,series,M);
+  // legend
+  $('#trendLegend').innerHTML=series.map(s=>`<span><i style="background:${s.color}${s.dash?';opacity:.7':''}"></i>${esc(s.label)}</span>`).join('');
+  const hint=(!activeSchool&&!state.kommuner.length)?t.trHint:'';
+  $('#trendNote').textContent=[salsaNote,hint].filter(Boolean).join(' ');
 }
-function updateSortHeaders(){
-  $$('thead th').forEach(th=>{
-    if(th.dataset.sort===state.sort){th.setAttribute('aria-sort',state.dir==='asc'?'ascending':'descending');th.querySelector('.ar').textContent=state.dir==='asc'?'▲':'▼';}
-    else{th.removeAttribute('aria-sort');th.querySelector('.ar').textContent='▲▼';}
-  });
+function drawTrend(periods,series,M){
+  const W=340,H=210,padL=36,padR=10,padT=12,padB=26;
+  const xs=p=>padL+(periods.length<=1?0:(periods.indexOf(p)/(periods.length-1))*(W-padL-padR));
+  let vals=[];series.forEach(s=>s.pts.forEach(pt=>{if(pt.v!=null)vals.push(pt.v);}));
+  if(!vals.length){$('#trendChart').innerHTML=`<svg viewBox="0 0 ${W} ${H}"></svg>`;return;}
+  let mn=Math.min(...vals),mx=Math.max(...vals);if(mn===mx){mn-=1;mx+=1;}const padv=(mx-mn)*0.12;mn-=padv;mx+=padv;
+  const ys=v=>padT+(1-(v-mn)/(mx-mn))*(H-padT-padB);
+  const dec=M.dec;
+  let g='';
+  // gridlines
+  [0,.5,1].forEach(f=>{const v=mn+(mx-mn)*f,y=ys(v);g+=`<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="#eceae3"/><text x="${padL-5}" y="${y+3}" text-anchor="end" font-size="9" fill="#9aa0ab">${v.toFixed(dec)}</text>`;});
+  // x labels
+  const step=periods.length>6?2:1;
+  periods.forEach((p,i)=>{if(i%step===0||i===periods.length-1)g+=`<text x="${xs(p)}" y="${H-9}" text-anchor="middle" font-size="9" fill="#9aa0ab">${shortP(p)}</text>`;});
+  // lines
+  for(const s of series){
+    const segs=[];let cur=[];
+    s.pts.forEach(pt=>{if(pt.v==null){if(cur.length)segs.push(cur);cur=[];}else cur.push(`${xs(pt.p).toFixed(1)},${ys(pt.v).toFixed(1)}`);});
+    if(cur.length)segs.push(cur);
+    segs.forEach(c=>{g+=`<polyline points="${c.join(' ')}" fill="none" stroke="${s.color}" stroke-width="${s.width||1.8}" ${s.dash?'stroke-dasharray="4 3" opacity=".8"':''} stroke-linejoin="round" stroke-linecap="round"/>`;});
+    s.pts.forEach(pt=>{if(pt.v!=null)g+=`<circle cx="${xs(pt.p).toFixed(1)}" cy="${ys(pt.v).toFixed(1)}" r="${s.width?3:2.3}" fill="${s.color}"><title>${esc(s.label)} ${shortP(pt.p)}: ${pt.v.toFixed(dec)}</title></circle>`;});
+  }
+  $('#trendChart').innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img">${g}</svg>`;
 }
+function setTab(tab){state.tab=tab;
+  $('#tabRank').setAttribute('aria-selected',tab==='rank');$('#tabTrend').setAttribute('aria-selected',tab==='trend');
+  $('#rankView').hidden=tab!=='rank';$('#trendView').hidden=tab!=='trend';
+  if(tab==='trend')renderTrend();}
 
 /* ---------- events ---------- */
-$$('#metricSeg [data-metric]').forEach(b=>b.onclick=()=>{
-  state.metric=b.dataset.metric;
-  $$('#metricSeg [data-metric]').forEach(x=>x.setAttribute('aria-pressed',x===b));
-  render();
-});
-$$('#huvudSeg [data-huvud]').forEach(b=>b.onclick=()=>{
-  state.huvud=b.dataset.huvud;
-  $$('#huvudSeg [data-huvud]').forEach(x=>x.setAttribute('aria-pressed',x===b));
-  render();
-});
-$$('#langSeg [data-lang]').forEach(b=>b.onclick=()=>{
-  lang=b.dataset.lang; try{localStorage.setItem('skolkarta_lang',lang);}catch(e){}
-  applyLang(); render();
-});
-$('#kommun').onchange=e=>{
-  state.kommun=e.target.value; render();
-  const rows=filtered().filter(s=>s.lat&&s.lng);
-  if(state.kommun&&rows.length) map.fitBounds(L.latLngBounds(rows.map(s=>[s.lat,s.lng])).pad(.3));
-};
-let qt; $('#q').oninput=e=>{clearTimeout(qt);qt=setTimeout(()=>{state.q=e.target.value;render();},120);};
-$$('thead th').forEach(th=>th.onclick=()=>{
-  const key=th.dataset.sort;
-  if(state.sort===key) state.dir=state.dir==='asc'?'desc':'asc';
-  else{state.sort=key; state.dir=(key==='namn'||key==='kommun')?'asc':'desc';}
-  render();
-});
+$$('#metricSeg [data-metric]').forEach(b=>b.onclick=()=>{state.metric=b.dataset.metric;$$('#metricSeg [data-metric]').forEach(x=>x.setAttribute('aria-pressed',x===b));if(state.sort!=='namn'&&state.sort!=='kommun')state.sort='metric';render();});
+$$('#huvudSeg [data-huvud]').forEach(b=>b.onclick=()=>{state.huvud=b.dataset.huvud;$$('#huvudSeg [data-huvud]').forEach(x=>x.setAttribute('aria-pressed',x===b));render();});
+$$('#langSeg [data-lang]').forEach(b=>b.onclick=()=>{lang=b.dataset.lang;try{localStorage.setItem('skolkarta_lang',lang);}catch(e){}applyLang();renderMsList($('#msSearch').value);syncKommun();});
+$('#msBtn').onclick=()=>$('#msPanel').classList.toggle('on');
+$('#msClose').onclick=()=>$('#msPanel').classList.remove('on');
+$('#msClear').onclick=()=>{state.kommuner=[];renderMsList($('#msSearch').value);syncKommun();};
+$('#msSearch').oninput=e=>renderMsList(e.target.value);
+document.addEventListener('click',e=>{if(!$('#ms').contains(e.target))$('#msPanel').classList.remove('on');});
+let qt;$('#q').oninput=e=>{clearTimeout(qt);qt=setTimeout(()=>{state.q=e.target.value;render();},120);};
+$$('thead th').forEach(th=>th.onclick=()=>{const k=th.dataset.sort;if(state.sort===k)state.dir=state.dir==='asc'?'desc':'asc';else{state.sort=k;state.dir=(k==='namn'||k==='kommun')?'asc':'desc';}render();});
+$('#tabRank').onclick=()=>setTab('rank');$('#tabTrend').onclick=()=>setTab('trend');
+$$('#rangeSeg [data-range]').forEach(b=>b.onclick=()=>{state.range=+b.dataset.range;$$('#rangeSeg [data-range]').forEach(x=>x.setAttribute('aria-pressed',x===b));renderTrend();});
 
 load();
 </script>

@@ -24,7 +24,7 @@ import path from 'node:path';
 
 const BASE = 'https://api.skolverket.se/planned-educations';
 const ACCEPT = 'application/vnd.skolverket.plannededucations.api.v4.hal+json';
-const CACHE_DIR = path.join(process.cwd(), 'cache', 'stats');
+const CACHE_DIR = path.join(process.cwd(), 'cache', 'gr2');
 const OUT = path.join(process.cwd(), 'data.json');
 
 const CONCURRENCY = 6;        // samtidiga statistik-anrop
@@ -68,6 +68,34 @@ function latest(arr) {
   if (ok.length === 0) return { value: null, period: null };
   ok.sort((a, b) => String(b.timePeriod).localeCompare(String(a.timePeriod)));
   return { value: num(ok[0].value), period: ok[0].timePeriod ?? null };
+}
+
+// Hela tidsserien som { "2024/25": 231.0, ... }
+function seriesOf(arr) {
+  const o = {};
+  if (Array.isArray(arr)) for (const x of arr) {
+    if (x && x.valueType === 'EXISTS' && x.timePeriod) {
+      const v = num(x.value);
+      if (v != null) o[x.timePeriod] = v;
+    }
+  }
+  return o;
+}
+// NP-serie = medel av SVE/ENG/MA per läsår
+function npSeries(body) {
+  const subs = [
+    seriesOf(body.averageResultNationalTestsSubjectSVE9thGrade),
+    seriesOf(body.averageResultNationalTestsSubjectENG9thGrade),
+    seriesOf(body.averageResultNationalTestsSubjectMA9thGrade),
+  ];
+  const periods = new Set();
+  subs.forEach((s) => Object.keys(s).forEach((p) => periods.add(p)));
+  const o = {};
+  for (const p of periods) {
+    const vals = subs.map((s) => s[p]).filter((v) => v != null);
+    if (vals.length) o[p] = +(vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1);
+  }
+  return o;
 }
 
 // ---------- pagination ----------
@@ -185,6 +213,11 @@ async function getStats(code) {
     lararbehorighet: teachers.value,
     elever: pupils.value,
     period: merit.period || beh.period || np && npSve.period || null,
+    series: {
+      meritvarde: seriesOf(body.averageGradesMeritRating9thGrade),
+      behorighet: seriesOf(body.ratioOfPupils9thGradeEligibleForNationalProgramYR),
+      np: npSeries(body),
+    },
   };
   await writeFile(cacheFile, JSON.stringify(out));
   return out;
