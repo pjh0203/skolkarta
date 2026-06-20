@@ -280,7 +280,7 @@ async function load(){
   if(!d||!d.schools||!d.schools.length)d=SAMPLE;
   DATA=d.schools;META=d;
   if(d.sample||(d.source&&/EXEMPEL/i.test(d.source)))$('#sampleFlag').classList.add('on');
-  initMap();buildOptions();applyLang();render();
+  initMap();buildOptions();applyLang();render();setTimeout(()=>{map.invalidateSize();render();},150);
 }
 function initMap(){map=L.map('map',{preferCanvas:true}).setView([62,15],4);L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{attribution:'© OpenStreetMap, © CARTO',subdomains:'abcd',maxZoom:19}).addTo(map);layer=L.layerGroup().addTo(map);}
 
@@ -313,7 +313,7 @@ function applyLang(){const t=I18N[lang];document.documentElement.lang=lang;docum
   $('#thSchool').textContent=t.colSchool;$('#thKommun').textContent=t.colKommun;$('#thValue').textContent=t.colValue;$('#empty').textContent=t.empty;
   $('#tabRank').textContent=t.tabRank;$('#tabTrend').textContent=t.tabTrend;
   $('#rangeSeg [data-range]').forEach(b=>b.textContent=b.dataset.range==='all'?({zh:'全部',sv:'Alla',en:'All'}[lang]):b.dataset.range+(lang==='zh'?'年':lang==='sv'?' år':'y'));
-  $('#meta').innerHTML=t.metaTpl(META.count||DATA.length,META.latestPeriod,(META.source||'').replace(/EXEMPEL.*/i,'sample'));
+  $('#meta').innerHTML=t.metaTpl(META.count||DATA.length,META.latestPeriod,(META.source||'').replace(/EXEMPEL.*/i,'sample'))+(META.generatedAt?' · '+({zh:'更新',sv:'uppdaterad',en:'updated'}[lang])+' '+META.generatedAt.slice(0,10):'');
   const order=['prep','voc','intro'],groups={prep:[],voc:[],intro:[]};Object.keys(PROGINFO).forEach(c=>groups[PROGINFO[c].cat].push(c));
   let ph='<h3>'+PANELT[lang].t+'</h3><div class="lead">'+PANELT[lang].lead+'</div>';
   for(const cat of order){ph+='<div class="cat">'+CAT[lang][cat]+'</div><div class="pi">';for(const c of groups[cat])ph+='<b>'+c+' '+progName(c,lang)+'</b><span>'+PROGINFO[c][lang]+'</span>';ph+='</div>';}
