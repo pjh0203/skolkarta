@@ -312,7 +312,7 @@ function applyLang(){const t=I18N[lang];document.documentElement.lang=lang;docum
   $('#q').placeholder=t.searchPh;$('#shownUnit').textContent=t.unit;
   $('#thSchool').textContent=t.colSchool;$('#thKommun').textContent=t.colKommun;$('#thValue').textContent=t.colValue;$('#empty').textContent=t.empty;
   $('#tabRank').textContent=t.tabRank;$('#tabTrend').textContent=t.tabTrend;
-  $('#rangeSeg [data-range]').forEach(b=>b.textContent=b.dataset.range==='all'?({zh:'全部',sv:'Alla',en:'All'}[lang]):b.dataset.range+(lang==='zh'?'年':lang==='sv'?' år':'y'));
+  $$('#rangeSeg [data-range]').forEach(b=>b.textContent=b.dataset.range==='all'?({zh:'全部',sv:'Alla',en:'All'}[lang]):b.dataset.range+(lang==='zh'?'年':lang==='sv'?' år':'y'));
   $('#meta').innerHTML=t.metaTpl(META.count||DATA.length,META.latestPeriod,(META.source||'').replace(/EXEMPEL.*/i,'sample'))+(META.generatedAt?' · '+({zh:'更新',sv:'uppdaterad',en:'updated'}[lang])+' '+META.generatedAt.slice(0,10):'');
   const order=['prep','voc','intro'],groups={prep:[],voc:[],intro:[]};Object.keys(PROGINFO).forEach(c=>groups[PROGINFO[c].cat].push(c));
   let ph='<h3>'+PANELT[lang].t+'</h3><div class="lead">'+PANELT[lang].lead+'</div>';

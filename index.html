@@ -296,7 +296,7 @@ function applyLang(){
   $('#thSchool').textContent=t.colSchool;$('#thKommun').textContent=t.colKommun;$('#thValue').textContent=t.colValue;
   $('#empty').textContent=t.empty;
   $('#tabRank').textContent=t.tabRank;$('#tabTrend').textContent=t.tabTrend;
-  $('#rangeSeg [data-range]').forEach(b=>b.textContent=b.dataset.range==='all'?({zh:'全部',sv:'Alla',en:'All'}[lang]):b.dataset.range+(lang==='zh'?'年':lang==='sv'?' år':'y'));
+  $$('#rangeSeg [data-range]').forEach(b=>b.textContent=b.dataset.range==='all'?({zh:'全部',sv:'Alla',en:'All'}[lang]):b.dataset.range+(lang==='zh'?'年':lang==='sv'?' år':'y'));
   $('#meta').innerHTML=t.metaTpl(META.count||DATA.length,META.latestPeriod,META.salsaPeriod,(META.source||'').replace(/EXEMPEL.*/i,'sample'))+(META.generatedAt?' · '+({zh:'更新',sv:'uppdaterad',en:'updated'}[lang])+' '+META.generatedAt.slice(0,10):'');
 }
 
