@@ -19,7 +19,7 @@ import path from 'node:path';
 
 const BASE = 'https://api.skolverket.se/planned-educations';
 const ACCEPT = 'application/vnd.skolverket.plannededucations.api.v4.hal+json';
-const CACHE_DIR = path.join(process.cwd(), 'cache', 'gy');
+const CACHE_DIR = path.join(process.cwd(), 'cache', 'gy2');
 const OUT = path.join(process.cwd(), 'gy-data.json');
 const CONCURRENCY = 6, PAGE_SIZE = 100, RETRIES = 4;
 
@@ -50,6 +50,16 @@ function latest(arr) {
   if (!ok.length) return { value: null, period: null };
   ok.sort((a, b) => String(b.timePeriod).localeCompare(String(a.timePeriod)));
   return { value: num(ok[0].value), period: ok[0].timePeriod ?? null };
+}
+// hela tidsserien { period: value }
+function seriesOf(arr) {
+  const o = {};
+  if (Array.isArray(arr)) for (const x of arr) {
+    if (x && x.valueType === 'EXISTS' && x.timePeriod) {
+      const v = num(x.value); if (v != null) o[x.timePeriod] = v;
+    }
+  }
+  return o;
 }
 async function fetchAllPages(pathname, key) {
   const out = []; let page = 0;
@@ -122,7 +132,10 @@ async function getStats(code) {
       ? latest(p.averageResultNationalTestsSubjectMA1) : latest(p.averageResultNationalTestsSubjectMA2);
     const elever = latest(p.totalNumberOfPupils).value;
     const row = { c: p.programCode, n: elever, a: a.value, am: am.value, ay: a.period,
-      g: g.value, ge: ge.value, e: e.value, h: h.value, ns: ns.value, ne: ne.value, nm: nm.value };
+      g: g.value, ge: ge.value, e: e.value, h: h.value, ns: ns.value, ne: ne.value, nm: nm.value,
+      sa: seriesOf(p.admissionPointsAverage),
+      se: seriesOf(p.ratioOfPupilsWithExamWithin3Years),
+      sg: seriesOf(p.gradesPointsForStudents) };
     if (row.a == null && row.g == null && row.e == null && row.ns == null) continue; // helt tomt
     programs.push(row);
   }
