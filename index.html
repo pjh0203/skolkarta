@@ -149,7 +149,7 @@
       <!-- TREND view -->
       <div id="trendView" class="trend" hidden>
         <div class="thead"><b id="trendTitle"></b>
-          <div class="seg" id="rangeSeg"><button data-range="3"></button><button data-range="5" aria-pressed="true"></button><button data-range="10"></button></div>
+          <div class="seg" id="rangeSeg"><button data-range="3"></button><button data-range="5" aria-pressed="true"></button><button data-range="all"></button></div>
         </div>
         <div id="trendChart"></div>
         <div class="tlegend" id="trendLegend"></div>
@@ -223,6 +223,7 @@ const HELP={
 const METRICS={meritvarde:{field:'meritvarde',dom:[170,300],unit:'',dec:0},behorighet:{field:'behorighet',dom:[55,100],unit:'%',dec:0},np:{field:'np',dom:[9,18],unit:'',dec:1},salsa:{field:'salsaDev',dom:[-30,30],unit:'',dec:0,diverging:true}};
 const TREND_METRICS={meritvarde:1,behorighet:1,np:1}; // salsa saknar serie
 const LINE_COLORS=['#2f6f5e','#b14b3f','#3b6ea5','#c98a1b','#7a5ea7','#3f8f5a'];
+const TRMAX={zh:n=>`最多 ${n} 年`,sv:n=>`Max ${n} år`,en:n=>`Up to ${n} yrs`};
 
 let lang='zh';
 try{const s=localStorage.getItem('skolkarta_lang');if(s&&I18N[s])lang=s;else{const n=(navigator.language||'').slice(0,2);if(I18N[n])lang=n;}}catch(e){}
@@ -295,7 +296,7 @@ function applyLang(){
   $('#thSchool').textContent=t.colSchool;$('#thKommun').textContent=t.colKommun;$('#thValue').textContent=t.colValue;
   $('#empty').textContent=t.empty;
   $('#tabRank').textContent=t.tabRank;$('#tabTrend').textContent=t.tabTrend;
-  $$('#rangeSeg [data-range]').forEach(b=>b.textContent=b.dataset.range+(lang==='zh'?'年':lang==='sv'?' år':'y'));
+  $('#rangeSeg [data-range]').forEach(b=>b.textContent=b.dataset.range==='all'?({zh:'全部',sv:'Alla',en:'All'}[lang]):b.dataset.range+(lang==='zh'?'年':lang==='sv'?' år':'y'));
   $('#meta').innerHTML=t.metaTpl(META.count||DATA.length,META.latestPeriod,META.salsaPeriod,(META.source||'').replace(/EXEMPEL.*/i,'sample'));
 }
 
@@ -364,7 +365,7 @@ function renderTrend(){
   let salsaNote='';
   if(!TREND_METRICS[metric]){salsaNote=t.trSalsa;metric='meritvarde';}
   const M=METRICS[metric];
-  const periodsAll=allPeriods(metric);const periods=lastN(periodsAll,state.range);
+  const periodsAll=allPeriods(metric);const periods=state.range==='all'?periodsAll:lastN(periodsAll,state.range);
   const series=[];
   const activeSchool=active?DATA.find(s=>s.kod===active):null;
   let title;
@@ -387,7 +388,8 @@ function renderTrend(){
   // legend
   $('#trendLegend').innerHTML=series.map(s=>`<span><i style="background:${s.color}${s.dash?';opacity:.7':''}"></i>${esc(s.label)}</span>`).join('');
   const hint=(!activeSchool&&!state.kommuner.length)?t.trHint:'';
-  $('#trendNote').textContent=[salsaNote,hint].filter(Boolean).join(' ');
+  const maxhint=TRMAX[lang](periodsAll.length);
+  $('#trendNote').textContent=[maxhint,salsaNote,hint].filter(Boolean).join(' · ');
 }
 function drawTrend(periods,series,M){
   const W=340,H=210,padL=36,padR=10,padT=12,padB=26;
@@ -430,7 +432,7 @@ document.addEventListener('click',e=>{if(!$('#ms').contains(e.target))$('#msPane
 let qt;$('#q').oninput=e=>{clearTimeout(qt);qt=setTimeout(()=>{state.q=e.target.value;render();},120);};
 $$('thead th').forEach(th=>th.onclick=()=>{const k=th.dataset.sort;if(state.sort===k)state.dir=state.dir==='asc'?'desc':'asc';else{state.sort=k;state.dir=(k==='namn'||k==='kommun')?'asc':'desc';}render();});
 $('#tabRank').onclick=()=>setTab('rank');$('#tabTrend').onclick=()=>setTab('trend');
-$$('#rangeSeg [data-range]').forEach(b=>b.onclick=()=>{state.range=+b.dataset.range;$$('#rangeSeg [data-range]').forEach(x=>x.setAttribute('aria-pressed',x===b));renderTrend();});
+$$('#rangeSeg [data-range]').forEach(b=>b.onclick=()=>{state.range=b.dataset.range==='all'?'all':+b.dataset.range;$$('#rangeSeg [data-range]').forEach(x=>x.setAttribute('aria-pressed',x===b));renderTrend();});
 
 load();
 </script>

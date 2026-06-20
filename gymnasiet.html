@@ -154,7 +154,7 @@
         </div>
       </div>
       <div id="trendView" class="trend" hidden>
-        <div class="thead"><b id="trendTitle"></b><div class="seg" id="rangeSeg"><button data-range="3"></button><button data-range="5" aria-pressed="true"></button><button data-range="10"></button></div></div>
+        <div class="thead"><b id="trendTitle"></b><div class="seg" id="rangeSeg"><button data-range="3"></button><button data-range="5" aria-pressed="true"></button><button data-range="all"></button></div></div>
         <div id="trendChart"></div>
         <div class="tlegend" id="trendLegend"></div>
         <div class="tnote" id="trendNote"></div>
@@ -252,6 +252,7 @@ const GPROG={zh:{avg:'当前为"所有项目"的<b>校加权平均</b>（按各�
 
 const METRICS={admission:{field:'a',sf:'sa',dom:[160,320],unit:'',dec:0},exam3:{field:'e',sf:'se',dom:[50,100],unit:'%',dec:0},gpa:{field:'g',sf:'sg',dom:[10,18],unit:'',dec:1}};
 const LINE_COLORS=['#2f6f5e','#b14b3f','#3b6ea5','#c98a1b','#7a5ea7','#3f8f5a'];
+const TRMAX={zh:n=>`最多 ${n} 年`,sv:n=>`Max ${n} år`,en:n=>`Up to ${n} yrs`};
 
 let lang='zh';
 try{const s=localStorage.getItem('skolkarta_lang');if(s&&I18N[s])lang=s;else{const n=(navigator.language||'').slice(0,2);if(I18N[n])lang=n;}}catch(e){}
@@ -311,7 +312,7 @@ function applyLang(){const t=I18N[lang];document.documentElement.lang=lang;docum
   $('#q').placeholder=t.searchPh;$('#shownUnit').textContent=t.unit;
   $('#thSchool').textContent=t.colSchool;$('#thKommun').textContent=t.colKommun;$('#thValue').textContent=t.colValue;$('#empty').textContent=t.empty;
   $('#tabRank').textContent=t.tabRank;$('#tabTrend').textContent=t.tabTrend;
-  $$('#rangeSeg [data-range]').forEach(b=>b.textContent=b.dataset.range+(lang==='zh'?'年':lang==='sv'?' år':'y'));
+  $('#rangeSeg [data-range]').forEach(b=>b.textContent=b.dataset.range==='all'?({zh:'全部',sv:'Alla',en:'All'}[lang]):b.dataset.range+(lang==='zh'?'年':lang==='sv'?' år':'y'));
   $('#meta').innerHTML=t.metaTpl(META.count||DATA.length,META.latestPeriod,(META.source||'').replace(/EXEMPEL.*/i,'sample'));
   const order=['prep','voc','intro'],groups={prep:[],voc:[],intro:[]};Object.keys(PROGINFO).forEach(c=>groups[PROGINFO[c].cat].push(c));
   let ph='<h3>'+PANELT[lang].t+'</h3><div class="lead">'+PANELT[lang].lead+'</div>';
@@ -352,7 +353,7 @@ function avgSeries(schools,mk){const o={};for(const p of allPeriods(mk)){let n=0
 function lastN(a,n){return a.slice(Math.max(0,a.length-n));}
 function shortP(p){const a=p.split('/');return a.length===2?a[0].slice(2)+'/'+a[1]:p;}
 function renderTrend(){const t=I18N[lang],mk=state.metric,M=METRICS[mk];
-  const periods=lastN(allPeriods(mk),state.range);const series=[];const as=active?DATA.find(s=>s.kod===active):null;
+  const periodsAll=allPeriods(mk);const periods=state.range==='all'?periodsAll:lastN(periodsAll,state.range);const series=[];const as=active?DATA.find(s=>s.kod===active):null;
   const progCtx=state.program?state.program:t.trProgAll;let scope;
   if(as){scope=t.trTitleSchool;series.push({label:as.namn,color:'#1b2230',width:2.4,pts:periods.map(p=>({p,v:schoolYearValue(as,mk,p)}))});const ka=avgSeries(DATA.filter(s=>s.kommun===as.kommun),mk);series.push({label:as.kommun+t.trKommunSuffix,color:'#2f6f5e',pts:periods.map(p=>({p,v:ka[p]}))});}
   else if(state.kommuner.length){scope=t.trTitleKommun;state.kommuner.slice(0,6).forEach((k,i)=>{const a=avgSeries(DATA.filter(s=>s.kommun===k),mk);series.push({label:k,color:LINE_COLORS[i%6],pts:periods.map(p=>({p,v:a[p]}))});});}
@@ -361,7 +362,7 @@ function renderTrend(){const t=I18N[lang],mk=state.metric,M=METRICS[mk];
   $('#trendTitle').textContent=t.metricNames[mk].split(' (')[0]+' · '+scope+' · '+progCtx;
   drawTrend(periods,series,M);
   $('#trendLegend').innerHTML=series.map(s=>`<span><i style="background:${s.color}${s.dash?';opacity:.7':''}"></i>${esc(s.label)}</span>`).join('');
-  $('#trendNote').textContent=(!as&&!state.kommuner.length)?t.trHint:'';}
+  const maxhint=TRMAX[lang](periodsAll.length);const hint=(!as&&!state.kommuner.length)?t.trHint:'';$('#trendNote').textContent=[maxhint,hint].filter(Boolean).join(' · ');}
 function drawTrend(periods,series,M){const W=340,H=210,padL=36,padR=10,padT=12,padB=26;
   const xs=p=>padL+(periods.length<=1?0:(periods.indexOf(p)/(periods.length-1))*(W-padL-padR));
   let vals=[];series.forEach(s=>s.pts.forEach(pt=>{if(pt.v!=null)vals.push(pt.v);}));
@@ -393,7 +394,7 @@ document.addEventListener('click',e=>{if(!$('#ms').contains(e.target))$('#msPane
 let qt;$('#q').oninput=e=>{clearTimeout(qt);qt=setTimeout(()=>{state.q=e.target.value;render();},120);};
 $$('thead th').forEach(th=>th.onclick=()=>{const k=th.dataset.sort;if(state.sort===k)state.dir=state.dir==='asc'?'desc':'asc';else{state.sort=k;state.dir=(k==='namn'||k==='kommun')?'asc':'desc';}render();});
 $('#tabRank').onclick=()=>setTab('rank');$('#tabTrend').onclick=()=>setTab('trend');
-$$('#rangeSeg [data-range]').forEach(b=>b.onclick=()=>{state.range=+b.dataset.range;$$('#rangeSeg [data-range]').forEach(x=>x.setAttribute('aria-pressed',x===b));renderTrend();});
+$$('#rangeSeg [data-range]').forEach(b=>b.onclick=()=>{state.range=b.dataset.range==='all'?'all':+b.dataset.range;$$('#rangeSeg [data-range]').forEach(x=>x.setAttribute('aria-pressed',x===b));renderTrend();});
 load();
 </script>
 </body>
