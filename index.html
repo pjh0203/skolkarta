@@ -82,6 +82,10 @@
   .pop b{display:block;font-size:14px;margin-bottom:2px}.pop .pk{color:var(--muted);font-size:12px;margin-bottom:8px}
   .pop .grid{display:grid;grid-template-columns:auto auto;gap:3px 14px;font-size:12.5px}
   .pop .grid span:nth-child(odd){color:var(--muted)}.pop .grid span:nth-child(even){text-align:right;font-variant-numeric:tabular-nums}
+  .pop .survey{margin-top:8px;border-top:1px solid var(--hair2);padding-top:6px}
+  .pop .survey .sv-title{font-size:12px;font-weight:640}.pop .survey .sv-scale{color:var(--muted);font-weight:400;font-size:11px}
+  .pop .survey .sv-h{font-size:11px;color:var(--muted);margin:5px 0 1px}
+  .pop .survey .sv-line{font-size:12px;line-height:1.5}.pop .survey .sv-line b{font-weight:640;font-variant-numeric:tabular-nums}
   .empty{padding:26px 16px;color:var(--muted);font-size:13px;text-align:center}
   @media (max-width:820px){.main{flex-direction:column}#map{height:48vh;flex:none}aside{width:auto;max-width:none;border-left:0;border-top:1px solid var(--hair);flex:1 1 auto}.search input{width:140px}.ms-panel{right:auto;left:0}}
   @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
@@ -220,6 +224,20 @@ const HELP={
     np:'National tests: average of the year-9 tests in Swedish, English and Maths (0–20 each). Centrally set and marked.',
     salsa:'SALSA deviation: actual merit value minus what a model predicts from pupils\u2019 background. Positive (green) = above expectation, negative (red) = below.'},
 };
+const SV={
+  zh:{title:'问卷 Skolenkäten',parent:'家长',pupil:'学生',secure:'安全感',satisf:'满意度',order:'学习秩序',support:'支持',inspire:'激励',n:n=>`${n}份`},
+  sv:{title:'Skolenkäten',parent:'Vårdnadshavare',pupil:'Elever',secure:'Trygghet',satisf:'Nöjdhet',order:'Studiero',support:'Stöd',inspire:'Stimulans',n:n=>`${n} svar`},
+  en:{title:'Skolenkäten survey',parent:'Parents',pupil:'Pupils',secure:'Safety',satisf:'Satisfaction',order:'Study calm',support:'Support',inspire:'Inspiration',n:n=>`${n} resp.`},
+};
+function svLine(label,m){if(!m)return '';const t=SV[lang];
+  const parts=[['trygg',t.secure],['nojd',t.satisf],['ro',t.order],['stod',t.support],['stim',t.inspire]]
+    .filter(([k])=>m[k]!=null).map(([k,l])=>`${l} <b>${m[k].toFixed(1)}</b>`).join(' · ');
+  if(!parts)return '';
+  const low=(m.n!=null&&m.n<10)?' ⚠':'';
+  const meta=[m.sem,m.ak,m.n!=null?t.n(m.n):''].filter(Boolean).join(' · ');
+  return `<div class="sv-h">${label}${meta?' · '+meta:''}${low}</div><div class="sv-line">${parts}</div>`;}
+function surveyBlock(sv){if(!sv)return '';const t=SV[lang];const body=svLine(t.parent,sv.p)+svLine(t.pupil,sv.e);
+  if(!body)return '';return `<div class="survey"><div class="sv-title">${t.title} <span class="sv-scale">0–10</span></div>${body}</div>`;}
 const METRICS={meritvarde:{field:'meritvarde',dom:[170,300],unit:'',dec:0},behorighet:{field:'behorighet',dom:[55,100],unit:'%',dec:0},np:{field:'np',dom:[9,18],unit:'',dec:1},salsa:{field:'salsaDev',dom:[-30,30],unit:'',dec:0,diverging:true}};
 const TREND_METRICS={meritvarde:1,behorighet:1,np:1}; // salsa saknar serie
 const LINE_COLORS=['#2f6f5e','#b14b3f','#3b6ea5','#c98a1b','#7a5ea7','#3f8f5a'];
@@ -346,7 +364,7 @@ function popup(s){const t=I18N[lang].pop,g=(l,v,k)=>`<span>${l}</span><span>${fm
     g(t.merit,s.meritvarde,'meritvarde')+g(t.beh,s.behorighet,'behorighet')+g(t.np,s.np,'np')+
     (s.salsaDev!=null?g(t.salsaDev,s.salsaDev,'salsa'):'')+
     (s.andelGodkand!=null?`<span>${t.passed}</span><span>${fmt(s.andelGodkand,'behorighet')}</span>`:'')+
-    (s.lararbehorighet!=null?`<span>${t.teacher}</span><span>${fmt(s.lararbehorighet,'behorighet')}</span>`:'')+`</div></div>`;}
+    (s.lararbehorighet!=null?`<span>${t.teacher}</span><span>${fmt(s.lararbehorighet,'behorighet')}</span>`:'')+`</div>`+surveyBlock(s.survey)+`</div>`;}
 function setActive(kod,fly){active=kod;
   $$('#tbody tr').forEach(tr=>{const on=tr.dataset.kod===kod;tr.classList.toggle('active',on);if(on)tr.scrollIntoView({block:'nearest'});});
   const mk=markers.get(kod);if(mk){if(fly)map.flyTo(mk.getLatLng(),Math.max(map.getZoom(),9),{duration:.6});mk.openPopup();}

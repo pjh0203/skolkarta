@@ -20,6 +20,7 @@ import path from 'node:path';
 const BASE = 'https://api.skolverket.se/planned-educations';
 const ACCEPT = 'application/vnd.skolverket.plannededucations.api.v4.hal+json';
 const CACHE_DIR = path.join(process.cwd(), 'cache', 'gy2');
+const CACHE_SURVEY = path.join(process.cwd(), 'cache', 'survey-gy');
 const OUT = path.join(process.cwd(), 'gy-data.json');
 const CONCURRENCY = 6, PAGE_SIZE = 100, RETRIES = 4;
 
@@ -148,24 +149,56 @@ async function getStats(code) {
   return out;
 }
 
+// ---------- Skolenkäten (elever år 2) ----------
+function svAvg(m) { return m ? num(m.average) : null; }
+function pickMetrics(o) {
+  if (!o) return null;
+  const r = { trygg: svAvg(o.securityMetrics), nojd: svAvg(o.satisfactionMetrics), ro: svAvg(o.workingEnvironmentMetrics),
+    stod: svAvg(o.supportMetrics), stim: svAvg(o.inspirationMetrics),
+    n: o.noOfAnswers != null ? Math.round(num(o.noOfAnswers)) : null, sem: o.semester || null };
+  if ([r.trygg, r.nojd, r.ro, r.stod, r.stim].every((v) => v == null)) return null;
+  return r;
+}
+function pickPupil(body, order) {
+  const arr = body && body.schoolYearMetrics; if (!Array.isArray(arr)) return null;
+  for (const yr of order) { const s = pickMetrics(arr.find((x) => x.schoolYear === yr)); if (s) { s.ak = yr; return s; } }
+  for (const e of arr) { const s = pickMetrics(e); if (s) { s.ak = e.schoolYear; return s; } }
+  return null;
+}
+async function getSurvey(code) {
+  const cf = path.join(CACHE_SURVEY, code + '.json');
+  if (existsSync(cf)) { try { return JSON.parse(await readFile(cf, 'utf8')); } catch {} }
+  let e = null;
+  try { e = pickPupil(await api(`/v4/school-units/${code}/nestedsurveys/pupilsgy`), ['ar2']); } catch {}
+  const out = e ? { e } : null;
+  await writeFile(cf, JSON.stringify(out));
+  return out;
+}
+
 async function main() {
   await mkdir(CACHE_DIR, { recursive: true });
+  await mkdir(CACHE_SURVEY, { recursive: true });
   const [kommuner, schools, coords] = await Promise.all([getKommunMap(), getSchools(), getCoords()]);
   console.log(`\n${schools.length} gymnasieskolor.`);
   console.log('Hämtar statistik per skola…');
   const stats = await mapPool(schools, (s) => getStats(s.code), CONCURRENCY);
+
+  console.log('Hämtar enkät (Skolenkäten: elever år 2)…');
+  const surveys = await mapPool(schools, (s) => getSurvey(s.code), CONCURRENCY);
 
   const rows = [];
   schools.forEach((s, i) => {
     const st = stats[i];
     if (!st || !st.programs.length) return;
     const c = coords.get(s.code) || {};
+    const sv = surveys[i];
     rows.push({
       kod: s.code, namn: s.name,
       kommun: kommuner.get(s.kommunCode) || s.ort || '—', ort: s.ort, huvudman: s.huvudman,
       lat: c.lat ?? null, lng: c.lng ?? null,
       elever: st.elever, lararbehorighet: st.lararbehorighet,
       programs: st.programs,
+      ...(sv ? { survey: sv } : {}),
     });
   });
   const years = rows.flatMap((r) => r.programs.map((p) => p.ay)).filter(Boolean).sort();

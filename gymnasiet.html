@@ -85,6 +85,10 @@
   .pop th,.pop td{padding:2px 6px;text-align:right;border-bottom:1px solid var(--hair2)}
   .pop th:first-child,.pop td:first-child{text-align:left}.pop thead th{color:var(--muted);font-weight:600;position:static}
   .pop tr.cur td{font-weight:680;color:var(--brand)}
+  .pop .survey{margin-top:8px;border-top:1px solid var(--hair2);padding-top:6px}
+  .pop .survey .sv-title{font-size:12px;font-weight:640}.pop .survey .sv-scale{color:var(--muted);font-weight:400;font-size:11px}
+  .pop .survey .sv-h{font-size:11px;color:var(--muted);margin:5px 0 1px}
+  .pop .survey .sv-line{font-size:12px;line-height:1.5}.pop .survey .sv-line b{font-weight:640;font-variant-numeric:tabular-nums}
   .empty{padding:26px 16px;color:var(--muted);font-size:13px;text-align:center}
   .backdrop{position:fixed;inset:0;background:rgba(20,25,38,.4);display:none;z-index:1000}.backdrop.on{display:block}
   .panel{position:fixed;z-index:1001;left:50%;top:50%;transform:translate(-50%,-50%);width:min(580px,92vw);max-height:82vh;overflow:auto;background:var(--panel);border:1px solid var(--hair);border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.28);padding:16px 18px;display:none}.panel.on{display:block}
@@ -250,6 +254,20 @@ const HELP={
 };
 const GPROG={zh:{avg:'当前为"所有项目"的<b>校加权平均</b>（按各项目人数加权）。在上方选具体项目，对比更准确。',one:'当前只看所选项目；同校不同项目差别可能很大。'},sv:{avg:'Visar nu ett <b>viktat skolsnitt</b> över alla program. Välj ett program ovan för rättvisare jämförelse.',one:'Visar nu valt program; program inom samma skola kan skilja sig mycket.'},en:{avg:'Showing a <b>weighted school average</b> across all programs. Pick a program above for a fairer comparison.',one:'Showing the selected program; programs within a school can differ a lot.'}};
 
+const SV={
+  zh:{title:'问卷 Skolenkäten',pupil:'学生',secure:'安全感',satisf:'满意度',order:'学习秩序',support:'支持',inspire:'激励',n:n=>`${n}份`},
+  sv:{title:'Skolenkäten',pupil:'Elever',secure:'Trygghet',satisf:'Nöjdhet',order:'Studiero',support:'Stöd',inspire:'Stimulans',n:n=>`${n} svar`},
+  en:{title:'Skolenkäten survey',pupil:'Pupils',secure:'Safety',satisf:'Satisfaction',order:'Study calm',support:'Support',inspire:'Inspiration',n:n=>`${n} resp.`},
+};
+function svLine(label,m){if(!m)return '';const t=SV[lang];
+  const parts=[['trygg',t.secure],['nojd',t.satisf],['ro',t.order],['stod',t.support],['stim',t.inspire]]
+    .filter(([k])=>m[k]!=null).map(([k,l])=>`${l} <b>${m[k].toFixed(1)}</b>`).join(' · ');
+  if(!parts)return '';
+  const low=(m.n!=null&&m.n<10)?' ⚠':'';
+  const meta=[m.sem,m.ak,m.n!=null?t.n(m.n):''].filter(Boolean).join(' · ');
+  return `<div class="sv-h">${label}${meta?' · '+meta:''}${low}</div><div class="sv-line">${parts}</div>`;}
+function surveyBlock(sv){if(!sv)return '';const t=SV[lang];const body=svLine(t.pupil,sv.e);
+  if(!body)return '';return `<div class="survey"><div class="sv-title">${t.title} <span class="sv-scale">0–10</span></div>${body}</div>`;}
 const METRICS={admission:{field:'a',sf:'sa',dom:[160,320],unit:'',dec:0},exam3:{field:'e',sf:'se',dom:[50,100],unit:'%',dec:0},gpa:{field:'g',sf:'sg',dom:[10,18],unit:'',dec:1}};
 const LINE_COLORS=['#2f6f5e','#b14b3f','#3b6ea5','#c98a1b','#7a5ea7','#3f8f5a'];
 const TRMAX={zh:n=>`最多 ${n} 年`,sv:n=>`Max ${n} år`,en:n=>`Up to ${n} yrs`};
@@ -343,7 +361,7 @@ function render(){const m=state.metric,t=I18N[lang];
   if(state.tab==='trend')renderTrend();}
 function popup(s){const t=I18N[lang].pop;const progs=s.programs.slice().sort((a,b)=>(b.a??-1)-(a.a??-1));let rows='';
   for(const p of progs){const cur=state.program&&p.c===state.program?' class="cur"':'';rows+=`<tr${cur}><td>${p.c} · ${progName(p.c,lang)}</td><td>${p.a??'—'}</td><td>${p.g!=null?p.g.toFixed(1):'—'}</td><td>${p.e!=null?p.e+'%':'—'}</td></tr>`;}
-  return `<div class="pop"><b>${esc(s.namn)}</b><div class="pk">${esc(s.kommun||'')}${s.huvudman?' · '+(I18N[lang].huvudLabel[s.huvudman]||s.huvudman):''}${s.elever?' · '+I18N[lang].pupils(s.elever):''}</div><table><thead><tr><th>${t.prog}</th><th>${t.adm}</th><th>${t.gpa}</th><th>${t.exam}</th></tr></thead><tbody>${rows}</tbody></table><div class="kom" style="margin-top:6px">${t.schoolNote}</div></div>`;}
+  return `<div class="pop"><b>${esc(s.namn)}</b><div class="pk">${esc(s.kommun||'')}${s.huvudman?' · '+(I18N[lang].huvudLabel[s.huvudman]||s.huvudman):''}${s.elever?' · '+I18N[lang].pupils(s.elever):''}</div><table><thead><tr><th>${t.prog}</th><th>${t.adm}</th><th>${t.gpa}</th><th>${t.exam}</th></tr></thead><tbody>${rows}</tbody></table><div class="kom" style="margin-top:6px">${t.schoolNote}</div>`+surveyBlock(s.survey)+`</div>`;}
 function setActive(kod,fly){active=kod;$$('#tbody tr').forEach(tr=>{const on=tr.dataset.kod===kod;tr.classList.toggle('active',on);if(on)tr.scrollIntoView({block:'nearest'});});const mk=markers.get(kod);if(mk){if(fly)map.flyTo(mk.getLatLng(),Math.max(map.getZoom(),9),{duration:.6});mk.openPopup();}if(state.tab==='trend')renderTrend();}
 function updateSortHeaders(){$$('thead th').forEach(th=>{if(th.dataset.sort===state.sort){th.setAttribute('aria-sort',state.dir==='asc'?'ascending':'descending');th.querySelector('.ar').textContent=state.dir==='asc'?'▲':'▼';}else{th.removeAttribute('aria-sort');th.querySelector('.ar').textContent='▲▼';}});}
 

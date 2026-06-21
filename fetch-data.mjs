@@ -25,6 +25,7 @@ import path from 'node:path';
 const BASE = 'https://api.skolverket.se/planned-educations';
 const ACCEPT = 'application/vnd.skolverket.plannededucations.api.v4.hal+json';
 const CACHE_DIR = path.join(process.cwd(), 'cache', 'gr2');
+const CACHE_SURVEY = path.join(process.cwd(), 'cache', 'survey-gr');
 const OUT = path.join(process.cwd(), 'data.json');
 
 const CONCURRENCY = 6;        // samtidiga statistik-anrop
@@ -243,10 +244,46 @@ async function mapPool(items, worker, n) {
   return ret;
 }
 
+// ---------- Skolenkäten (enkät) ----------
+// 0–10-snitt per område. Föräldrar: objektet direkt. Elever: schoolYearMetrics[].
+function svAvg(m) { return m ? num(m.average) : null; }
+function pickMetrics(o) {
+  if (!o) return null;
+  const r = {
+    trygg: svAvg(o.securityMetrics),
+    nojd: svAvg(o.satisfactionMetrics),
+    ro: svAvg(o.workingEnvironmentMetrics),
+    stod: svAvg(o.supportMetrics),
+    stim: svAvg(o.inspirationMetrics),
+    n: o.noOfAnswers != null ? Math.round(num(o.noOfAnswers)) : null,
+    sem: o.semester || null,
+  };
+  if ([r.trygg, r.nojd, r.ro, r.stod, r.stim].every((v) => v == null)) return null;
+  return r;
+}
+function pickPupil(body, order) {
+  const arr = body && body.schoolYearMetrics;
+  if (!Array.isArray(arr)) return null;
+  for (const yr of order) { const s = pickMetrics(arr.find((x) => x.schoolYear === yr)); if (s) { s.ak = yr; return s; } }
+  for (const e of arr) { const s = pickMetrics(e); if (s) { s.ak = e.schoolYear; return s; } }
+  return null;
+}
+async function getSurvey(code) {
+  const cf = path.join(CACHE_SURVEY, code + '.json');
+  if (existsSync(cf)) { try { return JSON.parse(await readFile(cf, 'utf8')); } catch {} }
+  let p = null, e = null;
+  try { p = pickMetrics(await api(`/v4/school-units/${code}/nestedsurveys/custodiansgr`)); } catch {}
+  try { e = pickPupil(await api(`/v4/school-units/${code}/nestedsurveys/pupilsgr`), ['ak8', 'ak5']); } catch {}
+  const out = (p || e) ? { p, e } : null;
+  await writeFile(cf, JSON.stringify(out));
+  return out;
+}
+
 // ---------- main ----------
 
 async function main() {
   await mkdir(CACHE_DIR, { recursive: true });
+  await mkdir(CACHE_SURVEY, { recursive: true });
 
   const [kommuner, schools, coords, salsa] = await Promise.all([
     getKommunMap(),
@@ -259,6 +296,9 @@ async function main() {
   console.log('Hämtar statistik per skola (cache används om möjlig)…');
   const stats = await mapPool(schools, (s) => getStats(s.code), CONCURRENCY);
 
+  console.log('Hämtar enkät (Skolenkäten: föräldrar + elever)…');
+  const surveys = await mapPool(schools, (s) => getSurvey(s.code), CONCURRENCY);
+
   const rows = [];
   schools.forEach((s, idx) => {
     const st = stats[idx];
@@ -267,6 +307,7 @@ async function main() {
     const merged = { ...(st || {}), ...sa };
     if (merged.meritvarde == null && merged.behorighet == null && merged.np == null && merged.salsaDev == null) return;
     const c = coords.get(s.code) || {};
+    const sv = surveys[idx];
     rows.push({
       kod: s.code,
       namn: s.name,
@@ -276,6 +317,7 @@ async function main() {
       lat: c.lat ?? null,
       lng: c.lng ?? null,
       ...merged,
+      ...(sv ? { survey: sv } : {}),
     });
   });
 
