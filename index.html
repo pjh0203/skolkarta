@@ -89,6 +89,24 @@
   .empty{padding:26px 16px;color:var(--muted);font-size:13px;text-align:center}
   @media (max-width:820px){.main{flex-direction:column}#map{height:48vh;flex:none}aside{width:auto;max-width:none;border-left:0;border-top:1px solid var(--hair);flex:1 1 auto}.search input{width:140px}.ms-panel{right:auto;left:0}}
   @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+  .leaflet-popup-content{max-height:46vh;overflow-y:auto;margin:10px 12px}
+  .leaflet-popup-content-wrapper{border-radius:12px}
+  .pager{display:flex;align-items:center;justify-content:center;gap:14px;padding:7px;border-top:1px solid var(--hair2)}
+  .pager:empty{display:none}
+  .pager button{appearance:none;border:1px solid var(--hair);background:var(--panel);color:var(--ink);width:34px;height:32px;border-radius:8px;font-size:16px;cursor:pointer}
+  .pager button:disabled{opacity:.4;cursor:default}
+  .pager .pg{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+  @media (max-width:820px){
+    header{padding:10px 12px}
+    h1{font-size:16px}
+    .ttl .sub{display:none}
+    .meta{font-size:11px}
+    #map{height:46vh}
+    .controls{gap:8px}
+    .seg button{padding:6px 9px;font-size:12px}
+    .ms-panel{width:min(260px,82vw)}
+    .leaflet-popup-content{max-height:42vh}
+  }
 </style>
 </head>
 <body>
@@ -149,6 +167,7 @@
           </tr></thead><tbody id="tbody"></tbody></table>
           <div class="empty" id="empty" hidden></div>
         </div>
+        <div class="pager" id="pager"></div>
       </div>
       <!-- TREND view -->
       <div id="trendView" class="trend" hidden>
@@ -245,7 +264,7 @@ const TRMAX={zh:n=>`最多 ${n} 年`,sv:n=>`Max ${n} år`,en:n=>`Up to ${n} yrs`
 
 let lang='zh';
 try{const s=localStorage.getItem('skolkarta_lang');if(s&&I18N[s])lang=s;else{const n=(navigator.language||'').slice(0,2);if(I18N[n])lang=n;}}catch(e){}
-let state={metric:'meritvarde',huvud:'',kommuner:[],q:'',sort:'metric',dir:'desc',tab:'rank',range:5};
+let state={metric:'meritvarde',huvud:'',kommuner:[],q:'',sort:'metric',dir:'desc',tab:'rank',range:5,page:0};let lastSorted=[],lastSig='';const PAGE_SIZE=100;
 let DATA=[],META={},markers=new Map(),map,layer,active=null;
 const $=s=>document.querySelector(s),$$=s=>document.querySelectorAll(s);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -341,6 +360,7 @@ function setLegend(){const m=state.metric,M=METRICS[m];
   $('#metricHelp').innerHTML=HELP[lang][m];}
 
 function render(){
+  {const sig=JSON.stringify([state.metric,state.huvud,state.kommuner,state.q,state.sort,state.dir,state.program]);if(sig!==lastSig){state.page=0;lastSig=sig;}}
   const m=state.metric,M=METRICS[m],f=M.field,t=I18N[lang];
   $('#metricName').textContent=t.metricNames[m];setLegend();
   const rows=filtered();$('#shown').textContent=rows.length;
@@ -349,14 +369,7 @@ function render(){
     const mk=L.circleMarker([s.lat,s.lng],{radius:6,color:'#fff',weight:1.1,fillColor:color(m,s[f]),fillOpacity:.92}).bindPopup(popup(s),{maxWidth:270});
     mk.on('click',()=>setActive(s.kod,false));mk.addTo(layer);markers.set(s.kod,mk);
   }
-  const sorted=sortRows(rows),rank=state.sort==='metric'&&state.dir==='desc';
-  const tb=$('#tbody');tb.innerHTML='';
-  sorted.forEach((s,i)=>{const v=s[f],tr=document.createElement('tr');tr.dataset.kod=s.kod;
-    tr.innerHTML=`<td><span class="skola">${rank?`<span class="kom">${i+1}.</span> `:''}${esc(s.namn)}</span><div class="kom">${s.huvudman?(t.huvudLabel[s.huvudman]||s.huvudman):''}${s.elever?` · ${t.pupils(s.elever)}`:''}</div></td><td class="kom">${esc(s.kommun||'—')}</td><td class="numcol"><span class="val tnum">${fmt(v,m)}<span class="dot" style="background:${color(m,v)}"></span></span></td>`;
-    tr.addEventListener('click',()=>setActive(s.kod,true));tb.appendChild(tr);});
-  $('#empty').hidden=sorted.length>0;
-  if(active&&!markers.has(active))active=null;
-  updateSortHeaders();
+  lastSorted=sortRows(rows);clampPage();renderTable();if(active&&!markers.has(active))active=null;updateSortHeaders();
   if(state.tab==='trend')renderTrend();
 }
 function popup(s){const t=I18N[lang].pop,g=(l,v,k)=>`<span>${l}</span><span>${fmt(v,k)}</span>`;
@@ -365,7 +378,26 @@ function popup(s){const t=I18N[lang].pop,g=(l,v,k)=>`<span>${l}</span><span>${fm
     (s.salsaDev!=null?g(t.salsaDev,s.salsaDev,'salsa'):'')+
     (s.andelGodkand!=null?`<span>${t.passed}</span><span>${fmt(s.andelGodkand,'behorighet')}</span>`:'')+
     (s.lararbehorighet!=null?`<span>${t.teacher}</span><span>${fmt(s.lararbehorighet,'behorighet')}</span>`:'')+`</div>`+surveyBlock(s.survey)+`</div>`;}
-function setActive(kod,fly){active=kod;
+function renderTable(){
+  const m=state.metric,f=METRICS[m].field,t=I18N[lang],rank=state.sort==='metric'&&state.dir==='desc';
+  const total=lastSorted.length,pages=Math.max(1,Math.ceil(total/PAGE_SIZE)),start=state.page*PAGE_SIZE;
+  const tb=$('#tbody');tb.innerHTML='';
+  lastSorted.slice(start,start+PAGE_SIZE).forEach((s,j)=>{const i=start+j,v=s[f],tr=document.createElement('tr');tr.dataset.kod=s.kod;
+    tr.innerHTML=`<td><span class="skola">${rank?`<span class="kom">${i+1}.</span> `:''}${esc(s.namn)}</span><div class="kom">${s.huvudman?(t.huvudLabel[s.huvudman]||s.huvudman):''}${s.elever?` · ${t.pupils(s.elever)}`:''}</div></td><td class="kom">${esc(s.kommun||'—')}</td><td class="numcol"><span class="val tnum">${fmt(v,m)}<span class="dot" style="background:${color(m,v)}"></span></span></td>`;
+    tr.addEventListener('click',()=>setActive(s.kod,true));tb.appendChild(tr);});
+  $('#empty').hidden=total>0;
+  if(active){const a=document.querySelector(`#tbody tr[data-kod="${active}"]`);if(a)a.classList.add('active');}
+  renderPager(total,pages);
+}
+function renderPager(total,pages){const p=$('#pager');if(total<=PAGE_SIZE){p.innerHTML='';return;}
+  p.innerHTML=`<button id="pgPrev" ${state.page<=0?'disabled':''}>‹</button><span class="pg">${state.page+1} / ${pages} · ${total}</span><button id="pgNext" ${state.page>=pages-1?'disabled':''}>›</button>`;
+  const tw=document.querySelector('.tablewrap');
+  $('#pgPrev').onclick=()=>{if(state.page>0){state.page--;renderTable();if(tw)tw.scrollTop=0;}};
+  $('#pgNext').onclick=()=>{if(state.page<pages-1){state.page++;renderTable();if(tw)tw.scrollTop=0;}};
+}
+function clampPage(){const pages=Math.max(1,Math.ceil(lastSorted.length/PAGE_SIZE));if(state.page>=pages)state.page=pages-1;if(state.page<0)state.page=0;}
+
+function setActive(kod,fly){active=kod;const _i=lastSorted.findIndex(s=>s.kod===kod);if(_i>=0){const _p=Math.floor(_i/PAGE_SIZE);if(_p!==state.page){state.page=_p;renderTable();}}
   $$('#tbody tr').forEach(tr=>{const on=tr.dataset.kod===kod;tr.classList.toggle('active',on);if(on)tr.scrollIntoView({block:'nearest'});});
   const mk=markers.get(kod);if(mk){if(fly)map.flyTo(mk.getLatLng(),Math.max(map.getZoom(),9),{duration:.6});mk.openPopup();}
   if(state.tab==='trend')renderTrend();}

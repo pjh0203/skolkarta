@@ -98,6 +98,24 @@
   .panel .x{position:absolute;top:10px;right:14px;border:0;background:transparent;font-size:20px;line-height:1;cursor:pointer;color:var(--muted)}
   @media (max-width:820px){.main{flex-direction:column}#map{height:46vh;flex:none}aside{width:auto;max-width:none;border-left:0;border-top:1px solid var(--hair);flex:1 1 auto}.search input{width:130px}.ms-panel{right:auto;left:0}}
   @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+  .leaflet-popup-content{max-height:46vh;overflow-y:auto;margin:10px 12px}
+  .leaflet-popup-content-wrapper{border-radius:12px}
+  .pager{display:flex;align-items:center;justify-content:center;gap:14px;padding:7px;border-top:1px solid var(--hair2)}
+  .pager:empty{display:none}
+  .pager button{appearance:none;border:1px solid var(--hair);background:var(--panel);color:var(--ink);width:34px;height:32px;border-radius:8px;font-size:16px;cursor:pointer}
+  .pager button:disabled{opacity:.4;cursor:default}
+  .pager .pg{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+  @media (max-width:820px){
+    header{padding:10px 12px}
+    h1{font-size:16px}
+    .ttl .sub{display:none}
+    .meta{font-size:11px}
+    #map{height:46vh}
+    .controls{gap:8px}
+    .seg button{padding:6px 9px;font-size:12px}
+    .ms-panel{width:min(260px,82vw)}
+    .leaflet-popup-content{max-height:42vh}
+  }
 </style>
 </head>
 <body>
@@ -156,6 +174,7 @@
           </tr></thead><tbody id="tbody"></tbody></table>
           <div class="empty" id="empty" hidden></div>
         </div>
+        <div class="pager" id="pager"></div>
       </div>
       <div id="trendView" class="trend" hidden>
         <div class="thead"><b id="trendTitle"></b><div class="seg" id="rangeSeg"><button data-range="3"></button><button data-range="5" aria-pressed="true"></button><button data-range="all"></button></div></div>
@@ -274,7 +293,7 @@ const TRMAX={zh:n=>`最多 ${n} 年`,sv:n=>`Max ${n} år`,en:n=>`Up to ${n} yrs`
 
 let lang='zh';
 try{const s=localStorage.getItem('skolkarta_lang');if(s&&I18N[s])lang=s;else{const n=(navigator.language||'').slice(0,2);if(I18N[n])lang=n;}}catch(e){}
-let state={metric:'admission',huvud:'',kommuner:[],program:'',q:'',sort:'metric',dir:'desc',tab:'rank',range:5};
+let state={metric:'admission',huvud:'',kommuner:[],program:'',q:'',sort:'metric',dir:'desc',tab:'rank',range:5,page:0};let lastSorted=[],lastSig='';const PAGE_SIZE=100;
 let DATA=[],META={},markers=new Map(),map,layer,active=null;
 const $=s=>document.querySelector(s),$$=s=>document.querySelectorAll(s);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -348,21 +367,38 @@ function setLegend(){const M=METRICS[state.metric],t=I18N[lang];$('#legLo').text
   let lead;if(state.program){const info=progInfo(state.program),nm=progName(state.program,lang),cat=info?CAT[lang][info.cat]:'';lead='<b>'+state.program+' '+nm+'</b>'+(cat?' · '+cat:'')+(info?'：'+info[lang]:'');}else{lead=GPROG[lang].avg;}
   $('#metricHelp').innerHTML=lead+'<br><span style="opacity:.85">'+HELP[lang][state.metric]+'</span>';}
 
-function render(){const m=state.metric,t=I18N[lang];
+function render(){
+  {const sig=JSON.stringify([state.metric,state.huvud,state.kommuner,state.q,state.sort,state.dir,state.program]);if(sig!==lastSig){state.page=0;lastSig=sig;}}const m=state.metric,t=I18N[lang];
   $('#metricName').textContent=t.metricNames[m]+(state.program?` · ${state.program}`:'');setLegend();
   const rows=filtered();$('#shown').textContent=rows.length;
   layer.clearLayers();markers.clear();
   for(const s of rows.filter(s=>s.lat&&s.lng)){const v=schoolValue(s,m);const mk=L.circleMarker([s.lat,s.lng],{radius:6,color:'#fff',weight:1.1,fillColor:color(m,v),fillOpacity:.92}).bindPopup(popup(s),{maxWidth:300});mk.on('click',()=>setActive(s.kod,false));mk.addTo(layer);markers.set(s.kod,mk);}
-  const sorted=sortRows(rows),rank=state.sort==='metric'&&state.dir==='desc';const tb=$('#tbody');tb.innerHTML='';
-  sorted.forEach((s,i)=>{const v=schoolValue(s,m),tr=document.createElement('tr');tr.dataset.kod=s.kod;const tag=state.program?` · ${state.program}`:` · ${s.programs.length} ${lang==='zh'?'项目':lang==='sv'?'program':'progs'}`;
-    tr.innerHTML=`<td><span class="skola">${rank?`<span class="kom">${i+1}.</span> `:''}${esc(s.namn)}</span><div class="kom">${s.huvudman?(t.huvudLabel[s.huvudman]||s.huvudman):''}${tag}</div></td><td class="kom">${esc(s.kommun||'—')}</td><td class="numcol"><span class="val tnum">${fmt(v,m)}<span class="dot" style="background:${color(m,v)}"></span></span></td>`;
-    tr.addEventListener('click',()=>setActive(s.kod,true));tb.appendChild(tr);});
-  $('#empty').hidden=sorted.length>0;if(active&&!markers.has(active))active=null;updateSortHeaders();
+  lastSorted=sortRows(rows);clampPage();renderTable();if(active&&!markers.has(active))active=null;updateSortHeaders();
   if(state.tab==='trend')renderTrend();}
 function popup(s){const t=I18N[lang].pop;const progs=s.programs.slice().sort((a,b)=>(b.a??-1)-(a.a??-1));let rows='';
   for(const p of progs){const cur=state.program&&p.c===state.program?' class="cur"':'';rows+=`<tr${cur}><td>${p.c} · ${progName(p.c,lang)}</td><td>${p.a??'—'}</td><td>${p.g!=null?p.g.toFixed(1):'—'}</td><td>${p.e!=null?p.e+'%':'—'}</td></tr>`;}
   return `<div class="pop"><b>${esc(s.namn)}</b><div class="pk">${esc(s.kommun||'')}${s.huvudman?' · '+(I18N[lang].huvudLabel[s.huvudman]||s.huvudman):''}${s.elever?' · '+I18N[lang].pupils(s.elever):''}</div><table><thead><tr><th>${t.prog}</th><th>${t.adm}</th><th>${t.gpa}</th><th>${t.exam}</th></tr></thead><tbody>${rows}</tbody></table><div class="kom" style="margin-top:6px">${t.schoolNote}</div>`+surveyBlock(s.survey)+`</div>`;}
-function setActive(kod,fly){active=kod;$$('#tbody tr').forEach(tr=>{const on=tr.dataset.kod===kod;tr.classList.toggle('active',on);if(on)tr.scrollIntoView({block:'nearest'});});const mk=markers.get(kod);if(mk){if(fly)map.flyTo(mk.getLatLng(),Math.max(map.getZoom(),9),{duration:.6});mk.openPopup();}if(state.tab==='trend')renderTrend();}
+function renderTable(){
+  const m=state.metric,t=I18N[lang],rank=state.sort==='metric'&&state.dir==='desc';
+  const total=lastSorted.length,pages=Math.max(1,Math.ceil(total/PAGE_SIZE)),start=state.page*PAGE_SIZE;
+  const tb=$('#tbody');tb.innerHTML='';
+  lastSorted.slice(start,start+PAGE_SIZE).forEach((s,j)=>{const i=start+j,v=schoolValue(s,m),tr=document.createElement('tr');tr.dataset.kod=s.kod;
+    const tag=state.program?` · ${state.program}`:` · ${s.programs.length} ${lang==='zh'?'项目':lang==='sv'?'program':'progs'}`;
+    tr.innerHTML=`<td><span class="skola">${rank?`<span class="kom">${i+1}.</span> `:''}${esc(s.namn)}</span><div class="kom">${s.huvudman?(t.huvudLabel[s.huvudman]||s.huvudman):''}${tag}</div></td><td class="kom">${esc(s.kommun||'—')}</td><td class="numcol"><span class="val tnum">${fmt(v,m)}<span class="dot" style="background:${color(m,v)}"></span></span></td>`;
+    tr.addEventListener('click',()=>setActive(s.kod,true));tb.appendChild(tr);});
+  $('#empty').hidden=total>0;
+  if(active){const a=document.querySelector(`#tbody tr[data-kod="${active}"]`);if(a)a.classList.add('active');}
+  renderPager(total,pages);
+}
+function renderPager(total,pages){const p=$('#pager');if(total<=PAGE_SIZE){p.innerHTML='';return;}
+  p.innerHTML=`<button id="pgPrev" ${state.page<=0?'disabled':''}>‹</button><span class="pg">${state.page+1} / ${pages} · ${total}</span><button id="pgNext" ${state.page>=pages-1?'disabled':''}>›</button>`;
+  const tw=document.querySelector('.tablewrap');
+  $('#pgPrev').onclick=()=>{if(state.page>0){state.page--;renderTable();if(tw)tw.scrollTop=0;}};
+  $('#pgNext').onclick=()=>{if(state.page<pages-1){state.page++;renderTable();if(tw)tw.scrollTop=0;}};
+}
+function clampPage(){const pages=Math.max(1,Math.ceil(lastSorted.length/PAGE_SIZE));if(state.page>=pages)state.page=pages-1;if(state.page<0)state.page=0;}
+
+function setActive(kod,fly){active=kod;const _i=lastSorted.findIndex(s=>s.kod===kod);if(_i>=0){const _p=Math.floor(_i/PAGE_SIZE);if(_p!==state.page){state.page=_p;renderTable();}}$$('#tbody tr').forEach(tr=>{const on=tr.dataset.kod===kod;tr.classList.toggle('active',on);if(on)tr.scrollIntoView({block:'nearest'});});const mk=markers.get(kod);if(mk){if(fly)map.flyTo(mk.getLatLng(),Math.max(map.getZoom(),9),{duration:.6});mk.openPopup();}if(state.tab==='trend')renderTrend();}
 function updateSortHeaders(){$$('thead th').forEach(th=>{if(th.dataset.sort===state.sort){th.setAttribute('aria-sort',state.dir==='asc'?'ascending':'descending');th.querySelector('.ar').textContent=state.dir==='asc'?'▲':'▼';}else{th.removeAttribute('aria-sort');th.querySelector('.ar').textContent='▲▼';}});}
 
 /* TREND (följer programval) */
