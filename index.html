@@ -10,6 +10,7 @@
   *{box-sizing:border-box}html,body{margin:0;height:100%}
   body{font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Hanken Grotesk","Helvetica Neue",Arial,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink);background:var(--paper);-webkit-font-smoothing:antialiased}
   .tnum{font-variant-numeric:tabular-nums}
+  [hidden]{display:none!important}
   .app{display:flex;flex-direction:column;height:100%}
   header{padding:12px 16px;border-bottom:1px solid var(--hair);background:linear-gradient(180deg,#fbfaf7,#f6f5f1)}
   .level-nav{display:inline-flex;background:#e7e9e3;border-radius:10px;padding:3px;gap:2px;margin-bottom:8px}
@@ -79,6 +80,12 @@
   .trend .tlegend{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;font-size:12px;color:var(--ink)}
   .trend .tlegend i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:5px;vertical-align:middle}
   .trend .tnote{margin-top:8px;font-size:11.5px;color:var(--muted)}
+  .dstats{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .dstats .chip{font-size:11.5px;line-height:1;padding:6px 9px;border:1px solid var(--hair);border-radius:8px;background:var(--paper);color:var(--ink);font-variant-numeric:tabular-nums}
+  .dstats .chip b{font-weight:680}.dstats .chip .lab{color:var(--muted);font-weight:600;margin-right:4px}
+  .dstats .chip.you{border-color:var(--brand);background:rgba(47,111,94,.08)}
+  .dstats .chip.med{border-color:#c9c6bd}
+  .trend .thead .seg{flex:none}
   .pop b{display:block;font-size:14px;margin-bottom:2px}.pop .pk{color:var(--muted);font-size:12px;margin-bottom:8px}
   .pop .grid{display:grid;grid-template-columns:auto auto;gap:3px 14px;font-size:12.5px}
   .pop .grid span:nth-child(odd){color:var(--muted)}.pop .grid span:nth-child(even){text-align:right;font-variant-numeric:tabular-nums}
@@ -101,7 +108,12 @@
     h1{font-size:16px}
     .ttl .sub{display:none}
     .meta{font-size:11px}
-    #map{height:46vh}
+    /* let the whole page scroll instead of cramming map+panel into one viewport */
+    html,body,.app{height:auto;min-height:100%}
+    #map{height:44vh}
+    aside,#rankView,#trendView,#distView{flex:none}
+    .trend{overflow:visible}
+    #rankView .tablewrap{max-height:74vh}
     .controls{gap:8px}
     .seg button{padding:6px 9px;font-size:12px}
     .ms-panel{width:min(260px,82vw)}
@@ -157,6 +169,7 @@
       <div class="tabs" role="tablist">
         <button id="tabRank" role="tab" aria-selected="true"></button>
         <button id="tabTrend" role="tab" aria-selected="false"></button>
+        <button id="tabDist" role="tab" aria-selected="false"></button>
       </div>
       <!-- RANK view -->
       <div id="rankView">
@@ -182,6 +195,15 @@
         <div class="tlegend" id="trendLegend"></div>
         <div class="tnote" id="trendNote"></div>
       </div>
+      <div id="distView" class="trend" hidden>
+        <div class="thead"><b id="distTitle"></b>
+          <div class="seg" id="distModeSeg"><button data-dmode="hist" aria-pressed="true"></button><button data-dmode="box" aria-pressed="false"></button></div>
+        </div>
+        <div id="distChart"></div>
+        <div class="dstats" id="distStats"></div>
+        <div class="tlegend" id="distLegend"></div>
+        <div class="tnote" id="distNote"></div>
+      </div>
     </aside>
   </div>
 </div>
@@ -199,7 +221,11 @@ const I18N={
     huvudLabel:{Kommunal:'公立',['Fristående']:'私立'},
     metricNames:{meritvarde:'平均绩点 (meritvärde)',behorighet:'升学资格% (behörig YR)',np:'全国统考均分 (NP åk 9)',salsa:'SALSA 增值偏差'},
     metricShort:{meritvarde:['平均绩点','meritvärde'],behorighet:['升学资格%','behörig'],np:['全国统考','NP'],salsa:['SALSA','偏差']},
-    tabRank:'排行榜',tabTrend:'趋势图',
+    tabRank:'排行榜',tabTrend:'趋势图',tabDist:'分布',
+    dist:{title:'分数分布',natLeg:'全国',subLeg:'当前筛选',median:'中位数',q75:'前25%',q90:'前10%',q98:'前2%',ge:'≥',you:p=>`该校位于前 ${p}%`,n:n=>`样本 ${n} 所`,
+      hint:'灰色＝全国分布，绿色＝当前筛选；竖线为筛选组的分位线。纵轴为各自组内占比。',single:'样本太少，无法画分布。',
+      modeHist:'直方图',modeBox:'箱线对比',publik:'公立',privat:'私立',salsaZero:'0＝按生源预期；线右侧＝高于预期。',
+      boxHint:'每行一个组：盒＝25–75 分位，中线＝中位数，须＝10–90 分位。选多个区域可横向对比；未选区域时默认对比全国/公立/私立。'},
     trSchool:'',trNational:'全国平均',trKommunSuffix:'（区域均）',
     trTitleNational:'全国平均趋势',trTitleSchool:'学校趋势',trTitleKommun:'区域对比',
     trSalsa:'SALSA 没有历年数据，这里显示平均绩点（meritvärde）的趋势。',
@@ -213,7 +239,11 @@ const I18N={
     huvudLabel:{Kommunal:'Kommunal',['Fristående']:'Fristående'},
     metricNames:{meritvarde:'Genomsnittligt meritvärde',behorighet:'Behörighet yrkesprogram %',np:'Nationella prov åk 9 (snitt)',salsa:'SALSA-avvikelse'},
     metricShort:{meritvarde:['Meritvärde','snitt'],behorighet:['Behörig%','YR'],np:['Nat. prov','NP'],salsa:['SALSA','avvikelse']},
-    tabRank:'Ranking',tabTrend:'Trend',
+    tabRank:'Ranking',tabTrend:'Trend',tabDist:'Fördelning',
+    dist:{title:'Betygsfördelning',natLeg:'Hela riket',subLeg:'Nuvarande urval',median:'Median',q75:'Topp 25%',q90:'Topp 10%',q98:'Topp 2%',ge:'≥',you:p=>`Skolan ligger i topp ${p}%`,n:n=>`${n} skolor`,
+      hint:'Grått = hela riket, grönt = nuvarande urval; lodräta linjer = urvalets percentiler. Y-axeln visar andel inom respektive grupp.',single:'För få skolor för en fördelning.',
+      modeHist:'Histogram',modeBox:'Lådagram',publik:'Kommunal',privat:'Fristående',salsaZero:'0 = förväntat utifrån elevunderlag; höger om linjen = över förväntan.',
+      boxHint:'En rad per grupp: låda = 25–75:e percentilen, mittlinje = median, morrhår = 10–90:e. Välj flera kommuner för att jämföra; annars jämförs riket/kommunal/fristående.'},
     trSchool:'',trNational:'Riksgenomsnitt',trKommunSuffix:' (kommunsnitt)',
     trTitleNational:'Trend – riksgenomsnitt',trTitleSchool:'Trend – skola',trTitleKommun:'Jämför kommuner',
     trSalsa:'SALSA saknar tidsserie; visar trend för meritvärde i stället.',
@@ -227,7 +257,11 @@ const I18N={
     huvudLabel:{Kommunal:'Public',['Fristående']:'Independent'},
     metricNames:{meritvarde:'Average merit value (meritvärde)',behorighet:'Eligibility for upper sec. %',np:'National tests yr 9 (avg)',salsa:'SALSA value-added deviation'},
     metricShort:{meritvarde:['Merit','meritvärde'],behorighet:['Eligible%','behörig'],np:['Nat. tests','NP'],salsa:['SALSA','deviation']},
-    tabRank:'Ranking',tabTrend:'Trend',
+    tabRank:'Ranking',tabTrend:'Trend',tabDist:'Distribution',
+    dist:{title:'Score distribution',natLeg:'National',subLeg:'Current filter',median:'Median',q75:'Top 25%',q90:'Top 10%',q98:'Top 2%',ge:'≥',you:p=>`This school is in the top ${p}%`,n:n=>`${n} schools`,
+      hint:'Grey = national distribution, green = current filter; vertical lines are the filtered group’s percentiles. Y-axis shows share within each group.',single:'Too few schools to draw a distribution.',
+      modeHist:'Histogram',modeBox:'Box compare',publik:'Public',privat:'Independent',salsaZero:'0 = expected from intake; right of the line = above expectation.',
+      boxHint:'One row per group: box = 25–75th percentile, centre line = median, whiskers = 10–90th. Pick several municipalities to compare; otherwise national/public/independent are compared.'},
     trSchool:'',trNational:'National average',trKommunSuffix:' (municipality avg)',
     trTitleNational:'Trend – national average',trTitleSchool:'Trend – school',trTitleKommun:'Compare municipalities',
     trSalsa:'SALSA has no time series; showing the merit-value trend instead.',
@@ -268,7 +302,7 @@ const TRMAX={zh:n=>`最多 ${n} 年`,sv:n=>`Max ${n} år`,en:n=>`Up to ${n} yrs`
 
 let lang='zh';
 try{const s=localStorage.getItem('skolkarta_lang');if(s&&I18N[s])lang=s;else{const n=(navigator.language||'').slice(0,2);if(I18N[n])lang=n;}}catch(e){}
-let state={metric:'meritvarde',huvud:'',kommuner:[],q:'',sort:'metric',dir:'desc',tab:'rank',range:5,page:0};let lastSorted=[],lastSig='';const PAGE_SIZE=100;
+let state={metric:'meritvarde',huvud:'',kommuner:[],q:'',sort:'metric',dir:'desc',tab:'rank',range:5,page:0,distMode:'hist'};let lastSorted=[],lastSig='';const PAGE_SIZE=100;
 let DATA=[],META={},markers=new Map(),map,layer,active=null;
 const $=s=>document.querySelector(s),$$=s=>document.querySelectorAll(s);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -280,13 +314,51 @@ function color(mk,v){if(v==null||isNaN(v))return getCSS('--none');const M=METRIC
 const getCSS=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 function fmt(v,mk){if(v==null||isNaN(v))return '—';const M=METRICS[mk],s=v.toFixed(M.dec)+M.unit;return (M.diverging&&v>0)?'+'+s:s;}
 
+function readURL(){
+  const p=new URLSearchParams(location.search);
+  if(p.has('l')&&I18N[p.get('l')])lang=p.get('l');
+  if(p.has('m')&&METRICS[p.get('m')])state.metric=p.get('m');
+  if(p.has('h'))state.huvud=p.get('h');
+  if(p.has('k'))state.kommuner=p.get('k').split('~').filter(Boolean);
+  if(p.has('q'))state.q=p.get('q');
+  if(p.has('t')&&['rank','trend','dist'].includes(p.get('t')))state.tab=p.get('t');
+  if(p.has('r'))state.range=p.get('r')==='all'?'all':(+p.get('r')||5);
+  if(p.has('d')&&['hist','box'].includes(p.get('d')))state.distMode=p.get('d');
+  if(p.has('s'))active=p.get('s');
+}
+let urlT;
+function writeURL(){
+  clearTimeout(urlT);urlT=setTimeout(()=>{
+    const p=new URLSearchParams();
+    if(state.metric!=='meritvarde')p.set('m',state.metric);
+    if(state.huvud)p.set('h',state.huvud);
+    if(state.kommuner.length)p.set('k',state.kommuner.join('~'));
+    if(state.q)p.set('q',state.q);
+    if(state.tab!=='rank')p.set('t',state.tab);
+    if(state.tab==='trend'&&state.range!==5)p.set('r',state.range);
+    if(state.tab==='dist'&&state.distMode!=='hist')p.set('d',state.distMode);
+    if(active)p.set('s',active);
+    let qs=p.toString();
+    if(qs||lang!=='zh'){p.set('l',lang);qs=p.toString();}
+    history.replaceState(null,'',qs?('?'+qs):location.pathname);
+  },150);
+}
+function syncControls(){
+  $$('#metricSeg [data-metric]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.metric===state.metric));
+  $$('#huvudSeg [data-huvud]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.huvud===state.huvud));
+  $$('#rangeSeg [data-range]').forEach(b=>b.setAttribute('aria-pressed',(b.dataset.range==='all'?'all':+b.dataset.range)===state.range));
+  $('#q').value=state.q||'';
+  if(state.sort!=='namn'&&state.sort!=='kommun')state.sort='metric';
+}
 async function load(){
   let d=null;
   try{const r=await fetch('./data.json',{cache:'no-store'});if(r.ok)d=await r.json();}catch(e){}
   if(!d||!d.schools||!d.schools.length)d=SAMPLE;
   DATA=d.schools;META=d;
   if(d.sample||(d.source&&/EXEMPEL/i.test(d.source)))$('#sampleFlag').classList.add('on');
-  initMap();buildKommunList();applyLang();render();setTimeout(()=>{map.invalidateSize();render();},150);
+  readURL();syncControls();
+  initMap();buildKommunList();applyLang();setTab(state.tab);render();syncKommun();
+  setTimeout(()=>{map.invalidateSize();render();},150);
 }
 function initMap(){map=L.map('map',{preferCanvas:true}).setView([62,15],4);
   L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{attribution:'© OpenStreetMap, © CARTO',subdomains:'abcd',maxZoom:19}).addTo(map);
@@ -336,7 +408,8 @@ function applyLang(){
   $('#q').placeholder=t.searchPh;$('#shownUnit').textContent=t.unit;
   $('#thSchool').textContent=t.colSchool;$('#thKommun').textContent=t.colKommun;$('#thValue').textContent=t.colValue;
   $('#empty').textContent=t.empty;
-  $('#tabRank').textContent=t.tabRank;$('#tabTrend').textContent=t.tabTrend;
+  $('#tabRank').textContent=t.tabRank;$('#tabTrend').textContent=t.tabTrend;$('#tabDist').textContent=t.tabDist;
+  if(state.tab==='dist')renderDist();
   $$('#rangeSeg [data-range]').forEach(b=>b.textContent=b.dataset.range==='all'?({zh:'全部',sv:'Alla',en:'All'}[lang]):b.dataset.range+(lang==='zh'?'年':lang==='sv'?' år':'y'));
   $('#meta').innerHTML=t.metaTpl(META.count||DATA.length,META.latestPeriod,META.salsaPeriod,(META.source||'').replace(/EXEMPEL.*/i,'sample'))+(META.generatedAt?' · '+({zh:'更新',sv:'uppdaterad',en:'updated'}[lang])+' '+META.generatedAt.slice(0,10):'');
 }
@@ -375,6 +448,8 @@ function render(){
   }
   lastSorted=sortRows(rows);clampPage();renderTable();if(active&&!markers.has(active))active=null;updateSortHeaders();
   if(state.tab==='trend')renderTrend();
+  if(state.tab==='dist')renderDist();
+  writeURL();
 }
 function popup(s){const t=I18N[lang].pop,g=(l,v,k)=>`<span>${l}</span><span>${fmt(v,k)}</span>`;
   return `<div class="pop"><b>${esc(s.namn)}</b><div class="pk">${esc(s.kommun||'')}${s.huvudman?' · '+(I18N[lang].huvudLabel[s.huvudman]||s.huvudman):''}${s.period?' · '+s.period:''}</div><div class="grid">`+
@@ -404,7 +479,7 @@ function clampPage(){const pages=Math.max(1,Math.ceil(lastSorted.length/PAGE_SIZ
 function setActive(kod,fly){active=kod;const _i=lastSorted.findIndex(s=>s.kod===kod);if(_i>=0){const _p=Math.floor(_i/PAGE_SIZE);if(_p!==state.page){state.page=_p;renderTable();}}
   $$('#tbody tr').forEach(tr=>{const on=tr.dataset.kod===kod;tr.classList.toggle('active',on);if(on)tr.scrollIntoView({block:'nearest'});});
   const mk=markers.get(kod);if(mk){if(fly)map.flyTo(mk.getLatLng(),Math.max(map.getZoom(),9),{duration:.6});mk.openPopup();}
-  if(state.tab==='trend')renderTrend();}
+  if(state.tab==='trend')renderTrend();if(state.tab==='dist')renderDist();writeURL();}
 function updateSortHeaders(){$$('thead th').forEach(th=>{if(th.dataset.sort===state.sort){th.setAttribute('aria-sort',state.dir==='asc'?'ascending':'descending');th.querySelector('.ar').textContent=state.dir==='asc'?'▲':'▼';}else{th.removeAttribute('aria-sort');th.querySelector('.ar').textContent='▲▼';}});}
 
 /* ---------- TREND ---------- */
@@ -469,15 +544,112 @@ function drawTrend(periods,series,M){
   }
   $('#trendChart').innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img">${g}</svg>`;
 }
+/* ---------- DISTRIBUTION ---------- */
+function quantile(sorted,q){if(!sorted.length)return null;const pos=(sorted.length-1)*q,b=Math.floor(pos),r=pos-b;return sorted[b+1]!==undefined?sorted[b]+r*(sorted[b+1]-sorted[b]):sorted[b];}
+function valuesOf(schools,f){const o=[];for(const s of schools){const v=s[f];if(v!=null&&!isNaN(v))o.push(v);}return o;}
+function renderDist(){
+  const t=I18N[lang],dt=t.dist,m=state.metric,M=METRICS[m],f=M.field,dec=M.dec;
+  $('#distModeSeg [data-dmode="hist"]').textContent=dt.modeHist;$('#distModeSeg [data-dmode="box"]').textContent=dt.modeBox;
+  $$('#distModeSeg [data-dmode]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.dmode===state.distMode));
+  $('#distTitle').textContent=t.metricNames[m].split(' (')[0]+' · '+dt.title;
+  if(state.distMode==='box')return renderBox();
+  const natVals=valuesOf(DATA.filter(s=>!state.huvud||s.huvudman===state.huvud),f);
+  const subVals=valuesOf(filtered(),f);
+  if(subVals.length<2||!natVals.length){$('#distChart').innerHTML='';$('#distStats').innerHTML='';$('#distLegend').innerHTML='';$('#distNote').textContent=dt.single;return;}
+  const sub=subVals.slice().sort((a,b)=>a-b);
+  const q={p50:quantile(sub,.5),p75:quantile(sub,.75),p90:quantile(sub,.90),p98:quantile(sub,.98)};
+  // bins over national range (so the grey backdrop is the full envelope)
+  let mn=Math.min(...natVals,...subVals),mx=Math.max(...natVals,...subVals);if(mn===mx){mn-=1;mx+=1;}
+  const BINS=26,bw=(mx-mn)/BINS,binOf=v=>Math.min(BINS-1,Math.max(0,Math.floor((v-mn)/bw)));
+  const natC=new Array(BINS).fill(0),subC=new Array(BINS).fill(0);
+  natVals.forEach(v=>natC[binOf(v)]++);subVals.forEach(v=>subC[binOf(v)]++);
+  const activeSchool=active?DATA.find(s=>s.kod===active):null;
+  const av=activeSchool&&activeSchool[f]!=null&&!isNaN(activeSchool[f])?activeSchool[f]:null;
+  let youPct=null;if(av!=null){const ge=sub.filter(v=>v>=av).length;youPct=ge/sub.length*100;youPct=youPct>=10?Math.round(youPct):+youPct.toFixed(1);}
+  const lines=[{v:q.p50,c:'#7a7468',w:1.6,lab:dt.median},{v:q.p75,c:'#b9b3a6',w:1.1,lab:dt.q75},{v:q.p90,c:'#b9b3a6',w:1.1,lab:dt.q90},{v:q.p98,c:'#b9b3a6',w:1.1,lab:dt.q98}];
+  drawDist({mn,mx,BINS,bw,natC,subC,natN:natVals.length,subN:subVals.length,lines,av,col:getCSS('--hi'),dec,diverging:M.diverging});
+  // stats chips
+  const fv=v=>v==null?'—':v.toFixed(dec)+M.unit;
+  let chips=`<span class="chip med"><span class="lab">${dt.median}</span><b>${fv(q.p50)}</b></span>`+
+    `<span class="chip"><span class="lab">${dt.q75} ${dt.ge}</span><b>${fv(q.p75)}</b></span>`+
+    `<span class="chip"><span class="lab">${dt.q90} ${dt.ge}</span><b>${fv(q.p90)}</b></span>`+
+    `<span class="chip"><span class="lab">${dt.q98} ${dt.ge}</span><b>${fv(q.p98)}</b></span>`+
+    `<span class="chip"><b>${dt.n(subVals.length)}</b></span>`;
+  if(youPct!=null)chips=`<span class="chip you"><b>${esc(activeSchool.namn)}</b> · ${fv(av)} · ${dt.you(youPct)}</span>`+chips;
+  $('#distStats').innerHTML=chips;
+  $('#distLegend').innerHTML=`<span><i style="background:#d9d7cf;height:9px;border-radius:2px"></i>${dt.natLeg}</span><span><i style="background:${getCSS('--hi')};opacity:.62;height:9px;border-radius:2px"></i>${dt.subLeg}</span>`;
+  $('#distNote').textContent=dt.hint+(M.diverging&&dt.salsaZero?' '+dt.salsaZero:'');
+}
+function drawDist({mn,mx,BINS,bw,natC,subC,natN,subN,lines,av,col,dec,diverging}){
+  const W=340,H=210,padL=8,padR=10,padT=26,padB=20,y0=H-padB;
+  const x=v=>padL+(mx===mn?0:(v-mn)/(mx-mn))*(W-padL-padR);
+  const bx=i=>padL+(i/BINS)*(W-padL-padR),pxW=Math.max(0.6,(W-padL-padR)/BINS-0.6);
+  const natF=natC.map(c=>natN?c/natN:0),subF=subC.map(c=>subN?c/subN:0);
+  const maxF=Math.max(0.0001,...natF,...subF),bh=fr=>(fr/maxF)*(H-padT-padB);
+  let g=`<line x1="${padL}" y1="${y0}" x2="${W-padR}" y2="${y0}" stroke="#e0ded6"/>`;
+  for(let i=0;i<BINS;i++){if(natF[i]){const h=bh(natF[i]);g+=`<rect x="${bx(i).toFixed(1)}" y="${(y0-h).toFixed(1)}" width="${pxW.toFixed(1)}" height="${h.toFixed(1)}" fill="#d9d7cf"/>`;}}
+  for(let i=0;i<BINS;i++){if(subF[i]){const h=bh(subF[i]);g+=`<rect x="${bx(i).toFixed(1)}" y="${(y0-h).toFixed(1)}" width="${pxW.toFixed(1)}" height="${h.toFixed(1)}" fill="${col}" opacity=".62"/>`;}}
+  // percentile lines + staggered labels
+  lines.forEach((ln,i)=>{if(ln.v==null)return;const lx=x(ln.v);const ly=i%2?padT-2:12;
+    g+=`<line x1="${lx.toFixed(1)}" y1="${padT-6}" x2="${lx.toFixed(1)}" y2="${y0}" stroke="${ln.c}" stroke-width="${ln.w}" stroke-dasharray="3 2"/>`;
+    const anchor=lx>W-60?'end':(lx<60?'start':'middle');
+    g+=`<text x="${lx.toFixed(1)}" y="${ly}" text-anchor="${anchor}" font-size="8.5" fill="#7a7468">${esc(ln.lab)}</text>`;});
+  // zero reference line (diverging metrics like SALSA)
+  if(diverging&&0>mn&&0<mx){const zx=x(0);g+=`<line x1="${zx.toFixed(1)}" y1="${padT-6}" x2="${zx.toFixed(1)}" y2="${y0}" stroke="#5d6675" stroke-width="1.4"/><text x="${zx.toFixed(1)}" y="${y0+12}" text-anchor="middle" font-size="9" font-weight="600" fill="#5d6675">0</text>`;}
+  // active school line
+  if(av!=null){const lx=x(av);g+=`<line x1="${lx.toFixed(1)}" y1="${padT-6}" x2="${lx.toFixed(1)}" y2="${y0}" stroke="#1b2230" stroke-width="2"/><path d="M${(lx-4).toFixed(1)} ${y0} L${(lx+4).toFixed(1)} ${y0} L${lx.toFixed(1)} ${(y0-6).toFixed(1)} Z" fill="#1b2230"/>`;}
+  // x-axis ticks
+  [mn,(mn+mx)/2,mx].forEach((v,i)=>{const tx=x(v);g+=`<text x="${tx.toFixed(1)}" y="${H-7}" text-anchor="${i===0?'start':i===2?'end':'middle'}" font-size="9" fill="#9aa0ab">${v.toFixed(dec)}</text>`;});
+  $('#distChart').innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img">${g}</svg>`;
+}
+function boxStats(vals){const s=vals.slice().sort((a,b)=>a-b);return {lo:quantile(s,.1),q1:quantile(s,.25),med:quantile(s,.5),q3:quantile(s,.75),hi:quantile(s,.9),n:s.length};}
+function distGroups(){
+  const dt=I18N[lang].dist,f=METRICS[state.metric].field,base=DATA.filter(s=>!state.huvud||s.huvudman===state.huvud),g=[];
+  if(state.kommuner.length){
+    state.kommuner.slice(0,8).forEach((k,i)=>g.push({label:k,color:LINE_COLORS[i%LINE_COLORS.length],vals:valuesOf(base.filter(s=>s.kommun===k),f)}));
+    g.push({label:dt.natLeg,color:'#9aa0ab',vals:valuesOf(DATA,f)});
+  }else{
+    g.push({label:dt.natLeg,color:'#9aa0ab',vals:valuesOf(DATA,f)});
+    g.push({label:dt.publik,color:'#2f6f5e',vals:valuesOf(DATA.filter(s=>s.huvudman==='Kommunal'),f)});
+    g.push({label:dt.privat,color:'#b14b3f',vals:valuesOf(DATA.filter(s=>s.huvudman==='Fristående'),f)});
+  }
+  return g.filter(x=>x.vals.length>=2);
+}
+function renderBox(){
+  const dt=I18N[lang].dist,M=METRICS[state.metric],dec=M.dec,groups=distGroups();
+  $('#distLegend').innerHTML='';
+  if(groups.length<1){$('#distChart').innerHTML='';$('#distStats').innerHTML='';$('#distNote').textContent=dt.single;return;}
+  const stats=groups.map(g=>({...g,st:boxStats(g.vals)}));
+  drawBox(stats,M,dec);
+  $('#distStats').innerHTML=stats.map(g=>`<span class="chip"><span class="lab">${esc(g.label)}</span><b>${g.st.med==null?'—':g.st.med.toFixed(dec)+M.unit}</b></span>`).join('');
+  $('#distNote').textContent=dt.boxHint+(M.diverging&&dt.salsaZero?' '+dt.salsaZero:'');
+}
+function drawBox(groups,M,dec){
+  const W=340,padL=86,padR=12,padT=8,padB=22,rowH=28,boxH=13,H=padT+groups.length*rowH+padB,plotW=W-padL-padR;
+  let mn=Infinity,mx=-Infinity;groups.forEach(g=>{if(g.st.lo<mn)mn=g.st.lo;if(g.st.hi>mx)mx=g.st.hi;});
+  if(!isFinite(mn)){$('#distChart').innerHTML='';return;}if(mn===mx){mn-=1;mx+=1;}const pad=(mx-mn)*.06;mn-=pad;mx+=pad;
+  const x=v=>padL+(v-mn)/(mx-mn)*plotW;let g='';
+  [0,.5,1].forEach(fr=>{const v=mn+(mx-mn)*fr,gx=x(v);g+=`<line x1="${gx.toFixed(1)}" y1="${padT}" x2="${gx.toFixed(1)}" y2="${H-padB}" stroke="#f0eee8"/><text x="${gx.toFixed(1)}" y="${H-7}" text-anchor="${fr===0?'start':fr===1?'end':'middle'}" font-size="9" fill="#9aa0ab">${v.toFixed(dec)}</text>`;});
+  if(M.diverging&&0>mn&&0<mx){const zx=x(0);g+=`<line x1="${zx.toFixed(1)}" y1="${padT}" x2="${zx.toFixed(1)}" y2="${H-padB}" stroke="#5d6675" stroke-width="1.3"/><text x="${zx.toFixed(1)}" y="${H-7}" text-anchor="middle" font-size="9" font-weight="600" fill="#5d6675">0</text>`;}
+  groups.forEach((grp,i)=>{const cy=padT+i*rowH+rowH/2,st=grp.st,c=grp.color;
+    g+=`<line x1="${x(st.lo).toFixed(1)}" y1="${cy}" x2="${x(st.hi).toFixed(1)}" y2="${cy}" stroke="${c}" stroke-width="1.2"/>`;
+    g+=`<line x1="${x(st.lo).toFixed(1)}" y1="${cy-4}" x2="${x(st.lo).toFixed(1)}" y2="${cy+4}" stroke="${c}" stroke-width="1.2"/><line x1="${x(st.hi).toFixed(1)}" y1="${cy-4}" x2="${x(st.hi).toFixed(1)}" y2="${cy+4}" stroke="${c}" stroke-width="1.2"/>`;
+    g+=`<rect x="${x(st.q1).toFixed(1)}" y="${(cy-boxH/2).toFixed(1)}" width="${Math.max(1,(x(st.q3)-x(st.q1))).toFixed(1)}" height="${boxH}" fill="${c}" opacity=".22" stroke="${c}" stroke-width="1"/>`;
+    g+=`<line x1="${x(st.med).toFixed(1)}" y1="${(cy-boxH/2).toFixed(1)}" x2="${x(st.med).toFixed(1)}" y2="${(cy+boxH/2).toFixed(1)}" stroke="${c}" stroke-width="2"/>`;
+    const lab=grp.label.length>13?grp.label.slice(0,12)+'…':grp.label;
+    g+=`<text x="4" y="${(cy-1).toFixed(1)}" font-size="10" fill="#1b2230">${esc(lab)}</text><text x="4" y="${(cy+9).toFixed(1)}" font-size="8" fill="#9aa0ab">n=${st.n}</text>`;
+  });
+  $('#distChart').innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img">${g}</svg>`;
+}
 function setTab(tab){state.tab=tab;
-  $('#tabRank').setAttribute('aria-selected',tab==='rank');$('#tabTrend').setAttribute('aria-selected',tab==='trend');
-  $('#rankView').hidden=tab!=='rank';$('#trendView').hidden=tab!=='trend';
-  if(tab==='trend')renderTrend();}
+  $('#tabRank').setAttribute('aria-selected',tab==='rank');$('#tabTrend').setAttribute('aria-selected',tab==='trend');$('#tabDist').setAttribute('aria-selected',tab==='dist');
+  $('#rankView').hidden=tab!=='rank';$('#trendView').hidden=tab!=='trend';$('#distView').hidden=tab!=='dist';
+  if(tab==='trend')renderTrend();if(tab==='dist')renderDist();writeURL();}
 
 /* ---------- events ---------- */
 $$('#metricSeg [data-metric]').forEach(b=>b.onclick=()=>{state.metric=b.dataset.metric;$$('#metricSeg [data-metric]').forEach(x=>x.setAttribute('aria-pressed',x===b));if(state.sort!=='namn'&&state.sort!=='kommun')state.sort='metric';render();});
 $$('#huvudSeg [data-huvud]').forEach(b=>b.onclick=()=>{state.huvud=b.dataset.huvud;$$('#huvudSeg [data-huvud]').forEach(x=>x.setAttribute('aria-pressed',x===b));render();});
-$$('#langSeg [data-lang]').forEach(b=>b.onclick=()=>{lang=b.dataset.lang;try{localStorage.setItem('skolkarta_lang',lang);}catch(e){}applyLang();renderMsList($('#msSearch').value);syncKommun();});
+$$('#langSeg [data-lang]').forEach(b=>b.onclick=()=>{lang=b.dataset.lang;try{localStorage.setItem('skolkarta_lang',lang);}catch(e){}applyLang();renderMsList($('#msSearch').value);syncKommun();writeURL();});
 $('#msBtn').onclick=()=>$('#msPanel').classList.toggle('on');
 $('#msClose').onclick=()=>$('#msPanel').classList.remove('on');
 $('#msClear').onclick=()=>{state.kommuner=[];renderMsList($('#msSearch').value);syncKommun();};
@@ -485,8 +657,9 @@ $('#msSearch').oninput=e=>renderMsList(e.target.value);
 document.addEventListener('click',e=>{if(!$('#ms').contains(e.target))$('#msPanel').classList.remove('on');});
 let qt;$('#q').oninput=e=>{clearTimeout(qt);qt=setTimeout(()=>{state.q=e.target.value;render();},120);};
 $$('thead th').forEach(th=>th.onclick=()=>{const k=th.dataset.sort;if(state.sort===k)state.dir=state.dir==='asc'?'desc':'asc';else{state.sort=k;state.dir=(k==='namn'||k==='kommun')?'asc':'desc';}render();});
-$('#tabRank').onclick=()=>setTab('rank');$('#tabTrend').onclick=()=>setTab('trend');
-$$('#rangeSeg [data-range]').forEach(b=>b.onclick=()=>{state.range=b.dataset.range==='all'?'all':+b.dataset.range;$$('#rangeSeg [data-range]').forEach(x=>x.setAttribute('aria-pressed',x===b));renderTrend();});
+$('#tabRank').onclick=()=>setTab('rank');$('#tabTrend').onclick=()=>setTab('trend');$('#tabDist').onclick=()=>setTab('dist');
+$$('#distModeSeg [data-dmode]').forEach(b=>b.onclick=()=>{state.distMode=b.dataset.dmode;$$('#distModeSeg [data-dmode]').forEach(x=>x.setAttribute('aria-pressed',x===b));renderDist();writeURL();});
+$$('#rangeSeg [data-range]').forEach(b=>b.onclick=()=>{state.range=b.dataset.range==='all'?'all':+b.dataset.range;$$('#rangeSeg [data-range]').forEach(x=>x.setAttribute('aria-pressed',x===b));renderTrend();writeURL();});
 
 load();
 </script>
